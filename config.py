@@ -4,9 +4,10 @@ class credentials:
 	password= ""
 	username= ""
 
+class thresholds:
+	upper_ = 50
+	lower = -10
+	remove = -20
+
 subreddit = "boottoobig"
 ignored_link_flair = ["Announcement", "BotM Contest"]
-
-upper_threshold = 50
-lower_threshold = -10
-remove_threshold = -20
