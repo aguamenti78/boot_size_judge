@@ -57,17 +57,20 @@ class vote:
 		for post in db["posts"]:
 			if (post["watchlist_comment"] == 1):
 				if (time.time() - post['created']) < 86400:
-					s = r.submission(post["id"])
-					log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 					c = r.comment(post["comment_id"])
 					log('[VOTE]Comment loaded for post flair, id = ' + post["comment_id"])
 					
 					if (isSunday):
-						if (c.score > config.upper_threshold): 
+						if (c.score > config.upper_threshold):
+							s = r.submission(post["id"])
+							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							s.mod.flair(text = "True BootTooBig", css_class = none)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 							j += 1
-						elif (c.score < config.remove_threshold): 
+							time.sleep(1)
+						elif (c.score < config.remove_threshold):
+							s = r.submission(post["id"])
+							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							text = formats.remove_message.smallboot
 							text = text.format(op = s.author, url = post['comment_perma'])
 							rm = s.reply(text)
@@ -75,23 +78,33 @@ class vote:
 							s.mod.remove(spam = False)
 							log('[VOTE]Submission removed, id=' + s.id)
 							j += 1
-						elif (c.score < config.lower_threshold): 
+							time.sleep(1)
+						elif (c.score < config.lower_threshold):
+							s = r.submission(post["id"])
+							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							c.parent().mod.flair(text = "Small Boots", css_class = none)
 							c.parent().report(formats.report.smallboot_notSunday)
 							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
 							j += 1
+							time.sleep(1)
 
 					else:
-						if (c.score > config.upper_threshold): 
+						if (c.score > config.upper_threshold):
+							s = r.submission(post["id"])
+							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							c.parent().mod.flair(text = "True BootTooBig", css_class = none)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 							j += 1
-						elif (c.score < config.lower_threshold): 
+							time.sleep(1)
+						elif (c.score < config.lower_threshold):
+							s = r.submission(post["id"])
+							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							c.parent().mod.flair(text = "Small Boots", css_class = none)
 							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
 							j += 1
-			
-					time.sleep(2)
+							time.sleep(1)
+
+					time.sleep(1)
 				else:
 					post['watchlist_comment'] = 0
 
