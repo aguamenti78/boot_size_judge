@@ -60,47 +60,52 @@ class vote:
 					log('[VOTE]Comment loaded for post flair, id = ' + post["comment_id"])
 					
 					if (isSunday):
-						if (c.score > config.threshold.upper):
+						if (c.score > config.thresholds.upper):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							c.parent().mod.flair(text = "True BootTooBig", css_class = None)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 							j += 1
 							time.sleep(1)
-						elif (c.score < config.threshold.lower):
+						elif (c.score < config.thresholds.lower):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							c.parent().mod.flair(text = "Small Boots", css_class = None)
-							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
-							j += 1
+							if (s.link_flair_text != "Small Boot"):
+								c.parent().mod.flair(text = "Small Boots", css_class = None)
+								log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
+								post['watchlist_comment'] = 0
+								j += 1
+
 							time.sleep(1)
 					else:
-						if (c.score > config.threshold.upper):
+						if (c.score > config.thresholds.upper):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							s.mod.flair(text = "True BootTooBig", css_class = None)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 							j += 1
 							time.sleep(1)
-						elif (c.score < config.threshold.remove):
+						elif (c.score < config.thresholds.remove):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							text = formats.remove_message.smallboot
-							text = text.format(op = s.author, url = post['comment_perma'])
+							text = text.format(op = post['op'], url = post['comment_perma'])
 							rm = s.reply(text)
 							rm.mod.distinguish(how='yes', sticky = True)
 							s.mod.remove(spam = False)
 							log('[VOTE]Submission removed, id=' + s.id)
-							post['comment_id'] = 0
+							post['watchlist_comment'] = 0
 							j += 1
 							time.sleep(1)
-						elif (c.score < config.threshold.lower):
+						elif (c.score < config.thresholds.lower):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							c.parent().mod.flair(text = "Small Boots", css_class = None)
-							c.parent().report(formats.report.smallboot_notSunday)
-							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
-							j += 1
+							if (s.link_flair_text != "Small Boot"):
+								c.parent().mod.flair(text = "Small Boots", css_class = None)
+								c.parent().report(formats.report.smallboot_notSunday)
+								log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
+								j += 1
+
 							time.sleep(1)
 						
 
@@ -204,6 +209,8 @@ ft = True
 st = False
 i = 0
 j = 0
+
+vote.check_score_comment()
 
 while True:
 	main_loop()
