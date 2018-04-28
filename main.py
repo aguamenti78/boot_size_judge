@@ -47,7 +47,6 @@ class vote:
 			                "comment_id": c.id, 
 			                "created": int(s.created_utc),
 							"comment_perma": c.permalink})
-
 		log("[VOTE]Post id added to database, id=" + s.id)
 		i += 1
 
@@ -64,7 +63,22 @@ class vote:
 						if (c.score > config.threshold.upper):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							s.mod.flair(text = "True BootTooBig", css_class = none)
+							c.parent().mod.flair(text = "True BootTooBig", css_class = None)
+							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
+							j += 1
+							time.sleep(1)
+						elif (c.score < config.threshold.lower):
+							s = r.submission(post["id"])
+							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
+							c.parent().mod.flair(text = "Small Boots", css_class = None)
+							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
+							j += 1
+							time.sleep(1)
+					else:
+						if (c.score > config.threshold.upper):
+							s = r.submission(post["id"])
+							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
+							s.mod.flair(text = "True BootTooBig", css_class = None)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 							j += 1
 							time.sleep(1)
@@ -77,32 +91,18 @@ class vote:
 							rm.mod.distinguish(how='yes', sticky = True)
 							s.mod.remove(spam = False)
 							log('[VOTE]Submission removed, id=' + s.id)
+							post['comment_id'] = 0
 							j += 1
 							time.sleep(1)
 						elif (c.score < config.threshold.lower):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							c.parent().mod.flair(text = "Small Boots", css_class = none)
+							c.parent().mod.flair(text = "Small Boots", css_class = None)
 							c.parent().report(formats.report.smallboot_notSunday)
 							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
 							j += 1
 							time.sleep(1)
-
-					else:
-						if (c.score > config.threshold.upper):
-							s = r.submission(post["id"])
-							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							c.parent().mod.flair(text = "True BootTooBig", css_class = none)
-							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
-							j += 1
-							time.sleep(1)
-						elif (c.score < config.threshold.lower):
-							s = r.submission(post["id"])
-							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							c.parent().mod.flair(text = "Small Boots", css_class = none)
-							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
-							j += 1
-							time.sleep(1)
+						
 
 					time.sleep(1)
 				else:
