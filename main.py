@@ -65,6 +65,9 @@ class vote:
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							c.parent().mod.flair(text = "True BootTooBig", css_class = None)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
+							post['watchlist_comment'] = 0
+							post['watchlist_submission'] = 1
+
 							j += 1
 							time.sleep(1)
 						elif (c.score < config.thresholds.lower):
@@ -81,8 +84,12 @@ class vote:
 						if (c.score > config.thresholds.upper):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							s.mod.flair(text = "True BootTooBig", css_class = None)
-							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
+							if (s.link_flair_text != "True BootTooBig"):
+								s.mod.flair(text = "True BootTooBig", css_class = None)
+								log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
+								post['watchlist_comment'] = 0
+								post['watchlist_submission'] = 1
+
 							j += 1
 							time.sleep(1)
 						elif (c.score < config.thresholds.remove):
@@ -123,21 +130,22 @@ class vote:
 				s = r.submission(post["id"])
 				log('[VOTE]Submission loaded for user flair, id = ' + post["id"])
 				
-				if ("True BootTooBig" in s.link_flair_text and s.score() > 5000):
+				if ("True BootTooBig" in s.link_flair_text and s.score > 5000):
 					sub = r.subreddit('boottoobig')
 					current = list(sub.flair(s.author))
 					current = current[0]["flair_text"]
 
 					if (current == None):
-						sub.flair.set(s.author, 'True BTB: 1', "botm")
+						sub.flair.set(s.author, 'True BTB: 1', "btb")
 					elif ("True BTB" in current):
 						num = int(current[-1:]) + 1
 						flair_text = current[:-1] + str(num)
-						sub.flair.set(s.author, flair_text, "botm")
+						sub.flair.set(s.author, flair_text, "btb")
 					else:
-						sub.flair.set(s.author, current + " | True BTB: 1", "botm")
+						sub.flair.set(s.author, current + " | True BTB: 1", "btb")
 					
-					log('[VOTE]Flair changed, op = ' + s.author)
+					post['watchlist_submission'] = 0
+					log('[VOTE]Flair changed, op = ' + str(s.author))
 
 def checked_submissions(id):
 	global db
@@ -167,8 +175,9 @@ def main_loop():
 		log("[MAIN]{} new post processed, {} watchlist post post processed. Going to sleep...".format(i, j))
 		i = 0
 		j = 0
+		ft = False
 	
-	if ft:
+	elif ft:
 		log("[MAIN]{} new post processed, {} watchlist post post processed. Going to sleep...".format(i, j))
 		ft = False
 
@@ -211,6 +220,7 @@ i = 0
 j = 0
 
 vote.check_score_comment()
+vote.check_score_submission()
 
 while True:
 	main_loop()
