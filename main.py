@@ -61,14 +61,14 @@ class vote:
 					log('[VOTE]Comment loaded for post flair, id = ' + post["comment_id"])
 					
 					if (isSunday):
-						if (c.score > config.upper_threshold):
+						if (c.score > config.threshold.upper):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							s.mod.flair(text = "True BootTooBig", css_class = none)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 							j += 1
 							time.sleep(1)
-						elif (c.score < config.remove_threshold):
+						elif (c.score < config.threshold.remove):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							text = formats.remove_message.smallboot
@@ -79,7 +79,7 @@ class vote:
 							log('[VOTE]Submission removed, id=' + s.id)
 							j += 1
 							time.sleep(1)
-						elif (c.score < config.lower_threshold):
+						elif (c.score < config.threshold.lower):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							c.parent().mod.flair(text = "Small Boots", css_class = none)
@@ -89,14 +89,14 @@ class vote:
 							time.sleep(1)
 
 					else:
-						if (c.score > config.upper_threshold):
+						if (c.score > config.threshold.upper):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							c.parent().mod.flair(text = "True BootTooBig", css_class = none)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 							j += 1
 							time.sleep(1)
-						elif (c.score < config.lower_threshold):
+						elif (c.score < config.threshold.lower):
 							s = r.submission(post["id"])
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 							c.parent().mod.flair(text = "Small Boots", css_class = none)
