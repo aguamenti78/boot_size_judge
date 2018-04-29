@@ -16,13 +16,13 @@ def log(text):
 	print(text)
 
 class vote:
-	def isSunday_false():
+	def isSunday_true():
 		global isSunday
 		
 		isSunday = True
 		log ("[VOTE]Small boot Sunday Started")
 
-	def isSunday_true():
+	def isSunday_false():
 		global isSunday
 		
 		isSunday = False
@@ -53,83 +53,102 @@ class vote:
 	def check_score_comment():
 		global isSunday, db, j
 		
+		list0 = []
+		
 		for post in db["posts"]:
 			if (post["watchlist_comment"] == 1):
 				if (time.time() - post['created']) < 86400:
-					c = r.comment(post["comment_id"])
-					log('[VOTE]Comment loaded for post flair, id = ' + post["comment_id"])
-					
-					if (isSunday):
-						if (c.score > config.thresholds.upper):
-							s = r.submission(post["id"])
-							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							c.parent().mod.flair(text = "True BootTooBig", css_class = None)
+					list0.append("t1_" + post['id'])
+				else:
+					post['watchlist_comment'] = 0
+		
+		while (len(list0) > 0):
+			if (len(list0) > 100):
+				list1 = list0[:100]
+				list0 = list[100:]
+			else:
+				list1 = list0
+				list0 = []
+			
+			comments = r.get_info(list1)
+			for c in submissions:
+				if (isSunday):
+					if (c.score > config.thresholds.upper):
+						s = r.submission(post["id"])
+						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
+						c.parent().mod.flair(text = "True BootTooBig", css_class = None)
+						log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
+						post['watchlist_comment'] = 0
+						post['watchlist_submission'] = 1
+
+						j += 1
+						time.sleep(1)
+					elif (c.score < config.thresholds.lower):
+						s = r.submission(post["id"])
+						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
+						if (s.link_flair_text != "Small Boot"):
+							c.parent().mod.flair(text = "Small Boots", css_class = None)
+							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
+							post['watchlist_comment'] = 0
+							j += 1
+
+						time.sleep(1)
+				else:
+					if (c.score > config.thresholds.upper):
+						s = r.submission(post["id"])
+						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
+						if (s.link_flair_text != "True BootTooBig"):
+							s.mod.flair(text = "True BootTooBig", css_class = None)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 							post['watchlist_comment'] = 0
 							post['watchlist_submission'] = 1
 
+						j += 1
+						time.sleep(1)
+					elif (c.score < config.thresholds.remove):
+						s = r.submission(post["id"])
+						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
+						text = formats.remove_message.smallboot
+						text = text.format(op = post['op'], url = post['comment_perma'])
+						rm = s.reply(text)
+						rm.mod.distinguish(how='yes', sticky = True)
+						s.mod.remove(spam = False)
+						log('[VOTE]Submission removed, id=' + s.id)
+						post['watchlist_comment'] = 0
+						j += 1
+							
+						time.sleep(1)
+					elif (c.score < config.thresholds.lower):
+						s = r.submission(post["id"])
+						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
+						if (s.link_flair_text != "Small Boot"):
+							c.parent().mod.flair(text = "Small Boots", css_class = None)
+							c.parent().report(formats.report.smallboot_notSunday)
+							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
 							j += 1
-							time.sleep(1)
-						elif (c.score < config.thresholds.lower):
-							s = r.submission(post["id"])
-							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							if (s.link_flair_text != "Small Boot"):
-								c.parent().mod.flair(text = "Small Boots", css_class = None)
-								log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
-								post['watchlist_comment'] = 0
-								j += 1
 
-							time.sleep(1)
-					else:
-						if (c.score > config.thresholds.upper):
-							s = r.submission(post["id"])
-							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							if (s.link_flair_text != "True BootTooBig"):
-								s.mod.flair(text = "True BootTooBig", css_class = None)
-								log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
-								post['watchlist_comment'] = 0
-								post['watchlist_submission'] = 1
+						time.sleep(1)
+					
 
-							j += 1
-							time.sleep(1)
-						elif (c.score < config.thresholds.remove):
-							s = r.submission(post["id"])
-							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							text = formats.remove_message.smallboot
-							text = text.format(op = post['op'], url = post['comment_perma'])
-							rm = s.reply(text)
-							rm.mod.distinguish(how='yes', sticky = True)
-							s.mod.remove(spam = False)
-							log('[VOTE]Submission removed, id=' + s.id)
-							post['watchlist_comment'] = 0
-							j += 1
-							time.sleep(1)
-						elif (c.score < config.thresholds.lower):
-							s = r.submission(post["id"])
-							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							if (s.link_flair_text != "Small Boot"):
-								c.parent().mod.flair(text = "Small Boots", css_class = None)
-								c.parent().report(formats.report.smallboot_notSunday)
-								log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
-								j += 1
-
-							time.sleep(1)
-						
-
-					time.sleep(1)
-				else:
-					post['watchlist_comment'] = 0
+				time.sleep(1)
+				
 
 		return j
 		
 	def check_score_submission():
-		global db
-
+		global db, r
+		
+		list0 = []
+		
 		for post in db["posts"]:
-			if (post["watchlist_submission"] == 1):
-				s = r.submission(post["id"])
-				log('[VOTE]Submission loaded for user flair, id = ' + post["id"])
-				
+			if (post0["watchlist_submission"] == 1):
+				list.append("t3_" + post['id'])
+		
+		while (len(list0) > 100):
+			list1 = list0[:100]
+			list0 = list[100:]
+			submissions = r.get_info(list1)
+			for s in submissions:
 				if ("True BootTooBig" in s.link_flair_text and s.score > 5000):
 					sub = r.subreddit('boottoobig')
 					current = list(sub.flair(s.author))
