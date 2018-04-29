@@ -71,7 +71,7 @@ class vote:
 				list0 = []
 			
 			comments = r.get_info(list1)
-			for c in submissions:
+			for c in comments:
 				if (isSunday):
 					if (c.score > config.thresholds.upper):
 						s = r.submission(post["id"])
