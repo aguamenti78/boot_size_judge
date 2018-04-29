@@ -58,14 +58,14 @@ class vote:
 		for post in db["posts"]:
 			if (post["watchlist_comment"] == 1):
 				if (time.time() - post['created']) < 86400:
-					list0.append("t1_" + post['id'])
+					list0.append("t1_" + str(post['comment_id']))
 				else:
 					post['watchlist_comment'] = 0
 		
 		while (len(list0) > 0):
 			if (len(list0) > 100):
 				list1 = list0[:100]
-				list0 = list[100:]
+				list0 = list0[100:]
 			else:
 				list1 = list0
 				list0 = []
@@ -142,27 +142,35 @@ class vote:
 		
 		for post in db["posts"]:
 			if (post0["watchlist_submission"] == 1):
-				list.append("t3_" + post['id'])
+				list.append("t3_" + str(post['id']))
 		
 		while (len(list0) > 100):
 			list1 = list0[:100]
-			list0 = list[100:]
+			list0 = list0[100:]
+			
 			submissions = r.get_info(list1)
 			for s in submissions:
 				if ("True BootTooBig" in s.link_flair_text and s.score > 5000):
+					flair_text = ""
+					css_class = "btb"
+
 					sub = r.subreddit('boottoobig')
 					current = list(sub.flair(s.author))
-					current = current[0]["flair_text"]
+					current_text = current[0]["flair_text"]
+					current_css = current[0]['flair_css_class']
 
-					if (current == None):
-						sub.flair.set(s.author, 'True BTB: 1', "btb")
-					elif ("True BTB" in current):
-						num = int(current[-1:]) + 1
-						flair_text = current[:-1] + str(num)
-						sub.flair.set(s.author, flair_text, "btb")
+					if (current_text == None):
+						flair_text = 'True BTB: 1'
+					elif ("True BTB" in current_text):
+						num = int(current_text[-1:]) + 1
+						flair_text = current_text[:-1] + str(num)
 					else:
-						sub.flair.set(s.author, current + " | True BTB: 1", "btb")
+						flair_text = current_text + " | True BTB: 1"
 					
+					if (current_css == "botm"):
+						css_class = "botm"
+
+					sub.flair.set(s.author, flair_text, css_class)
 					post['watchlist_submission'] = 0
 					log('[VOTE]Flair changed, op = ' + str(s.author))
 
