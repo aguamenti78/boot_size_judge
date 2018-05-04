@@ -3,11 +3,14 @@ class vote:
   notSunday = 'If the score of this comment falls too low, the post will be removed. \n\n'
 
 class botm:
-  contest_title = "Welcome to BotM: {month} {year} Contest! " 
-  contest_body = "{intro}\n\n&nbsp;\n\n{rule}\n\n"  
-  contest_intro = "Hello r/boottoobig, \n\nWelcome to the another Boot of the Month (BotM) Contest. BotM is still in its very early stage, please read the rule below carefully before particpating, as the rule may subject to change. "
+  title = "Welcome to BotM: {month} {year} Contest! " 
+  body = "{intro}\n\n&nbsp;\n\n{rule}\n\n&nbsp;\n\n{conclusion}"  
   
-  contest_commment = "{link}, by {op}"
+  intro = "Hello r/boottoobig, \n\nWelcome to another Boot of the Month (BotM) Contest. BotM is still in its very early stage, please read the rules below carefully before particpating, as the rule may subject to change. "
+  rule = 'Rules: \n\n1. Top 10 upvoted posts from last month will enter the contest. \n\n2. If the post is flaired as "Small Boots", it will be disqualified, and next most upvoted post will enter the contest. \n\n3. If you think a post deserves to be BotM, just upvote the corresponding comment. \n\n4. Please upvote up to 3 comments. '
+  conclusion = "The winner will be announced in one week. "
+  
+  comment = "[{title}]({link}), by {op}"
   
   winner_title = ""
   winner_body = ""

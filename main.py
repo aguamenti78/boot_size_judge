@@ -53,84 +53,101 @@ class vote:
 	def check_score_comment():
 		global isSunday, db, j
 		
-		list0 = []
+		list_post = []
+		list_comment = []
 		
 		for post in db["posts"]:
 			if (post["watchlist_comment"] == 1):
 				if (time.time() - post['created']) < 86400:
-					list0.append("t1_" + str(post['comment_id']))
+					list_post.append("t3_" + str(post['id']))
+					list_comment.append("t1_" + str(post['comment_id']))
 				else:
 					post['watchlist_comment'] = 0
-		
-		while (len(list0) > 0):
-			if (len(list0) > 100):
-				list1 = list0[:100]
-				list0 = list0[100:]
+
+		while (len(list_post) > 0):
+			if (len(list_post) > 100):
+				comments = list_comment[:100]
+				list_comment = list_comment[100:]
+
+				posts = list_post[:100]
+				list_post = list_post[100:]
+
 			else:
-				list1 = list0
-				list0 = []
+				comments = list_comment[:100]
+				list_comment = []
+
+				posts = list_post[:100]
+				list_post = []
 			
-			comments = r.get_info(list1)
-			for c in comments:
-				if (isSunday):
-					if (c.score > config.thresholds.upper):
-						s = r.submission(post["id"])
-						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-						c.parent().mod.flair(text = "True BootTooBig", css_class = None)
-						log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
-						post['watchlist_comment'] = 0
-						post['watchlist_submission'] = 1
+			s_list = r.info(posts)
+			c_list = r.info(comments)
+			
+			log("[VOTE]" + str(len(list1)) + " Comments load for link flair")
 
-						j += 1
-						time.sleep(1)
-					elif (c.score < config.thresholds.lower):
-						s = r.submission(post["id"])
-						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-						if (s.link_flair_text != "Small Boot"):
-							c.parent().mod.flair(text = "Small Boots", css_class = None)
-							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
-							post['watchlist_comment'] = 0
-							j += 1
-
-						time.sleep(1)
-				else:
-					if (c.score > config.thresholds.upper):
-						s = r.submission(post["id"])
-						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-						if (s.link_flair_text != "True BootTooBig"):
-							s.mod.flair(text = "True BootTooBig", css_class = None)
+			for i in range len(s_list):
+				s = s_list[i]
+				c = c_list[i]
+				
+				if (s.link_flair_text != None):
+					if (isSunday):
+						if (c.score > config.thresholds.upper):
+							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
+							c.parent().mod.flair(text = "True BootTooBig", css_class = None)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
+
+							post = get_post(s.id, "id")
 							post['watchlist_comment'] = 0
 							post['watchlist_submission'] = 1
 
-						j += 1
-						time.sleep(1)
-					elif (c.score < config.thresholds.remove):
-						s = r.submission(post["id"])
-						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-						text = formats.remove_message.smallboot
-						text = text.format(op = post['op'], url = post['comment_perma'])
-						rm = s.reply(text)
-						rm.mod.distinguish(how='yes', sticky = True)
-						s.mod.remove(spam = False)
-						log('[VOTE]Submission removed, id=' + s.id)
-						post['watchlist_comment'] = 0
-						j += 1
-							
-						time.sleep(1)
-					elif (c.score < config.thresholds.lower):
-						s = r.submission(post["id"])
-						log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-						if (s.link_flair_text != "Small Boot"):
+							j += 1
+							time.sleep(1)
+
+						elif (c.score < config.thresholds.lower):
+							c.parent().mod.flair(text = "Small Boots", css_class = None)
+							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
+
+							post = get_post(s.id, "id")
+							post['watchlist_comment'] = 0
+
+							j += 1
+							time.sleep(1)
+					else:
+						if (c.score > config.thresholds.upper):
+							s.mod.flair(text = "True BootTooBig", css_class = None)
+							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
+
+							post = get_post(s.id, "id")
+							post['watchlist_comment'] = 0
+							post['watchlist_submission'] = 1
+
+							j += 1
+							time.sleep(1)
+						elif (c.score < config.thresholds.remove):
+							text = formats.remove_message.smallboot
+							text = text.format(op = post['op'], url = post['comment_perma'])
+							rm = s.reply(text)
+							rm.mod.distinguish(how='yes', sticky = True)
+							s.mod.remove(spam = False)
+							log('[VOTE]Submission removed, id=' + s.id)
+
+							post = get_post(s.id, "id")
+							post['watchlist_submission'] = 0
+							post['watchlist_comment'] = 0
+
+							j += 1
+							time.sleep(1)
+						elif (c.score < config.thresholds.lower):
 							c.parent().mod.flair(text = "Small Boots", css_class = None)
 							c.parent().report(formats.report.smallboot_notSunday)
 							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
+							
 							j += 1
+							time.sleep(1)
+				else:
+					post = get_post(s.id, "id")
+					post['watchlist_comment'] = 0
 
-						time.sleep(1)
-					
-
-				time.sleep(1)
+			time.sleep(1)
 				
 
 		return j
@@ -141,16 +158,24 @@ class vote:
 		list0 = []
 		
 		for post in db["posts"]:
-			if (post0["watchlist_submission"] == 1):
-				list.append("t3_" + str(post['id']))
-		
-		while (len(list0) > 100):
-			list1 = list0[:100]
-			list0 = list0[100:]
-			
-			submissions = r.get_info(list1)
+			if (post["watchlist_submission"] == 1):
+				list0.append("t3_" + str(post['id']))
+
+		while (len(list0) > 0):
+			if (len(list0) > 100):
+				list1 = list0[:100]
+				list0 = list0[100:]
+			else:
+				list1 = list0
+				list0 = []
+
+			submissions = r.info(list1)
+			log("[VOTE]" + str(len(list1)) + " Posts load for link flair")
+
 			for s in submissions:
 				if ("True BootTooBig" in s.link_flair_text and s.score > 5000):
+					s.refresh()
+					log("[VOTE]Post loaded for user flair, id = " + s.id)
 					flair_text = ""
 					css_class = "btb"
 
@@ -171,10 +196,20 @@ class vote:
 						css_class = "botm"
 
 					sub.flair.set(s.author, flair_text, css_class)
+					post = get_post(s.id, "id")
 					post['watchlist_submission'] = 0
 					log('[VOTE]Flair changed, op = ' + str(s.author))
 
-def checked_submissions(id):
+			time.sleep(1)
+
+def get_post(id, type):
+	global db
+
+	for post in db['posts']:
+		if (post[type] == id):
+			return post
+
+def search_id(id):
 	global db
 	
 	cs = []
@@ -182,6 +217,63 @@ def checked_submissions(id):
 		cs.append(post["id"])
 	
 	return id in cs
+
+class botm:
+	def contest():
+		global db
+
+		if (True):
+			month = int(time.strftime('%m')) - 2
+			m = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+			if (month == -1):
+				month = m[11]
+			else:
+				month = m[month]
+			year = time.strftime('%G')
+			title = formats.botm.title.format(month = month, year = year)
+
+			body = formats.botm.body
+			body = body.format(intro = formats.botm.intro, rule = formats.botm.rule, conclusion = formats.botm.conclusion) + '\n\n'
+			body += formats.footer
+
+			contest = r.subreddit(config.subreddit).submit(title = title, selftext = body)
+			contest.mod.flair(text = "BotM Contest", css_class = None)
+			log("[BOTM]Contest Thread Posted")
+
+			db["botm"] = {"id": contest.id, 
+						  "date": month + year,
+						  "comments":[]}
+			log("[VOTE]Contest id added to database, id=" + contest.id)
+
+			time.sleep(3)
+
+			i = 0
+			for s in r.subreddit(config.subreddit).top('month', limit = 20):
+				if (not "Small Boots" in str(s.link_flair_text)):
+					reply = formats.botm.comment
+					reply = reply.format(title = s.title, link = s.permalink, op = str(s.author))
+
+					c = contest.reply(reply)
+					rm = c.reply("[link to post](" + s.permalink + ")")
+					rm.mod.remove(spam = False)
+
+					i += 1
+
+					db["botm"]["comments"].append({"id": c.id, 
+												   "post_id": s.id})
+
+					time.sleep(3)
+				if (i == 10):
+					break
+
+			log("[BOTM]Contest Comment Posted")
+			contest.mod.sticky()
+			log("[BOTM]Contest Thread stickied")
+
+			time.sleep(1)
+
+			with open('database.json', 'w') as outfile:
+				json.dump(db, outfile)
 
 def main_loop():
 	global r, db, ft, i, j
@@ -192,20 +284,20 @@ def main_loop():
 	log("[MAIN]Obtaining 10 posts")
 	x = 0
 	for s in r.subreddit(config.subreddit).new(limit=10):
-		if not checked_submissions(s.id) and s.link_flair_text not in config.ignored_link_flair:
+		if not search_id(s.id) and s.link_flair_text not in config.ignored_link_flair:
 			vote.reply_comment(s)
 
 	if (i != 0) or (j != 0):
 		#write to database
 		with open('database.json', 'w') as outfile:
 			json.dump(db, outfile)
-		log("[MAIN]{} new post processed, {} watchlist post post processed. Going to sleep...".format(i, j))
+		log("[MAIN]{} new post processed, {} watchlist post processed. Going to sleep...".format(i, j))
 		i = 0
 		j = 0
 		ft = False
 	
 	elif ft:
-		log("[MAIN]{} new post processed, {} watchlist post post processed. Going to sleep...".format(i, j))
+		log("[MAIN]{} new post processed, {} watchlist post processed. Going to sleep...".format(i, j))
 		ft = False
 
 	time.sleep(10)
@@ -238,6 +330,7 @@ isSunday = False
 #schedule jobs
 schedule.every().saturday.at("18:00").do(vote.isSunday_true)
 schedule.every().monday.at("6:00").do(vote.isSunday_false)
+schedule.every().day.at("0:01").do(botm.contest)
 schedule.every(10).minutes.do(vote.check_score_comment)
 schedule.every(10).minutes.do(vote.check_score_submission)
 
