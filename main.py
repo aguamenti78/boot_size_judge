@@ -319,6 +319,8 @@ def main_loop():
 	elif ft:
 		log("[MAIN]{} new post processed, {} watchlist post processed. Going to sleep...".format(i, j))
 		ft = False
+	
+	modlog()
 
 	time.sleep(10)
 
