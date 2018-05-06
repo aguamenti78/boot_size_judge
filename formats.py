@@ -16,7 +16,7 @@ class botm:
   winner_body = ""
 
 class report:
-  smallboot = "The post is not posted on small boot sunday and is flaged small boot by comment score, require further mod action"
+  smallboot = "Bot comment less than -10, not posted on sunday"
   
 class remove_message:
   smallboot = 'Hello {op}, \n\nThank you for your post! Unfortunately, due to the score on [this comment](url) is too low, your post is automatically removed under rule 3b: \n\n---\n\n>Try to make sure your post has good rhyme/meter. Good rhyme/meter is "True BootTooBig" while bad rhyme/meter is "Small Boots." If a "Small Boots" post is posted outside of Small Boots Sunday, it will be removed. Low effort posts will also be removed. At the moment, final discretion is up to the mods. \n\nYou are welcome to try it again on Small Boots Sunday. \n\n--- \n\nIf you have any further questions, please feel free to [message the moderators](https://www.reddit.com/message/compose?to=%2Fr%2Fboottoobig&subject=My+post+is+removed+incorrectly)'

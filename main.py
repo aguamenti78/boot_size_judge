@@ -38,6 +38,10 @@ class vote:
 		c = s.reply(text)
 		c.mod.distinguish(how='yes', sticky = True)
 		log("[VOTE]Comment posted, id=" + c.id)
+		
+		status = 0
+		if (isSunday):
+			status = 1
 		db["posts"].append({"id": s.id, 
 			                "op": "u/" + str(s.author),
 							"title": s.title, 
@@ -46,7 +50,11 @@ class vote:
 			                "watchlist_comment": 1, 
 			                "comment_id": c.id, 
 			                "created": int(s.created_utc),
-							"comment_perma": c.permalink})
+							"comment_perma": c.permalink,
+							"remove": 0
+							"isSunday": status
+							"reported": 0})
+
 		log("[VOTE]Post id added to database, id=" + s.id)
 		i += 1
 
@@ -87,15 +95,15 @@ class vote:
 			for i in range len(s_list):
 				s = s_list[i]
 				c = c_list[i]
+				post = get_post(s.id, "id")
 				
 				if (s.link_flair_text != None):
-					if (isSunday):
+					if (post["isSunday"] == 1):
 						if (c.score > config.thresholds.upper):
 							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-							c.parent().mod.flair(text = "True BootTooBig", css_class = None)
+							s.mod.flair(text = "True BootTooBig", css_class = None)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 
-							post = get_post(s.id, "id")
 							post['watchlist_comment'] = 0
 							post['watchlist_submission'] = 1
 
@@ -103,10 +111,9 @@ class vote:
 							time.sleep(1)
 
 						elif (c.score < config.thresholds.lower):
-							c.parent().mod.flair(text = "Small Boots", css_class = None)
+							s.mod.flair(text = "Small Boots", css_class = None)
 							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
 
-							post = get_post(s.id, "id")
 							post['watchlist_comment'] = 0
 
 							j += 1
@@ -116,7 +123,6 @@ class vote:
 							s.mod.flair(text = "True BootTooBig", css_class = None)
 							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 
-							post = get_post(s.id, "id")
 							post['watchlist_comment'] = 0
 							post['watchlist_submission'] = 1
 
@@ -130,22 +136,24 @@ class vote:
 							s.mod.remove(spam = False)
 							log('[VOTE]Submission removed, id=' + s.id)
 
-							post = get_post(s.id, "id")
 							post['watchlist_submission'] = 0
 							post['watchlist_comment'] = 0
 
 							j += 1
 							time.sleep(1)
 						elif (c.score < config.thresholds.lower):
-							c.parent().mod.flair(text = "Small Boots", css_class = None)
-							c.parent().report(formats.report.smallboot_notSunday)
+							s.mod.flair(text = "Small Boots", css_class = None)
+							if (post["reported"] == 0):
+								s.report(formats.report.smallboot_notSunday)
+								post["reported"] = 1
 							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
 							
 							j += 1
 							time.sleep(1)
 				else:
-					post = get_post(s.id, "id")
 					post['watchlist_comment'] = 0
+
+				post = None
 
 			time.sleep(1)
 				
@@ -174,7 +182,6 @@ class vote:
 
 			for s in submissions:
 				if ("True BootTooBig" in s.link_flair_text and s.score > 5000):
-					s.refresh()
 					log("[VOTE]Post loaded for user flair, id = " + s.id)
 					flair_text = ""
 					css_class = "btb"
@@ -191,16 +198,29 @@ class vote:
 						flair_text = current_text[:-1] + str(num)
 					else:
 						flair_text = current_text + " | True BTB: 1"
-					
+
 					if (current_css == "botm"):
 						css_class = "botm"
 
 					sub.flair.set(s.author, flair_text, css_class)
+
 					post = get_post(s.id, "id")
 					post['watchlist_submission'] = 0
 					log('[VOTE]Flair changed, op = ' + str(s.author))
+				elif (not "True BootTooBig" in s.link_flair_text):
+					post = get_post(s.id, "id")
+					post['watchlist_submission'] = 0
 
 			time.sleep(1)
+
+def modlog():
+	for log in r.subreddit(config.subreddit).mod.log(action = "removelink", limit=25):
+		id = (log.target_fullname)[3:]
+		if (search_id(id, "id")):
+			post = get_post(id)
+			post['watchlist_submission'] = 0
+			post['watchlist_comment'] = 0
+			post["remove"] = 1;
 
 def get_post(id, type):
 	global db
@@ -342,5 +362,5 @@ j = 0
 vote.check_score_comment()
 vote.check_score_submission()
 
-while True:
-	main_loop()
+#while True:
+	#main_loop()
