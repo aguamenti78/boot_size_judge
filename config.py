@@ -5,7 +5,7 @@ class credentials:
 	username= ""
 
 class thresholds:
-	upper_ = 50
+	upper = 50
 	lower = -10
 	remove = -20
 
