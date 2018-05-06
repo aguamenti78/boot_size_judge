@@ -7,10 +7,10 @@ class botm:
   body = "{intro}\n\n&nbsp;\n\n{rule}\n\n&nbsp;\n\n{conclusion}"  
   
   intro = "Hello r/boottoobig, \n\nWelcome to another Boot of the Month (BotM) Contest. BotM is still in its very early stage, please read the rules below carefully before particpating, as the rule may subject to change. "
-  rule = 'Rules: \n\n1. Top 10 upvoted posts from last month will enter the contest. \n\n2. If the post is flaired as "Small Boots", it will be disqualified, and next most upvoted post will enter the contest. \n\n3. If you think a post deserves to be BotM, just upvote the corresponding comment. \n\n4. Please upvote up to 3 comments. '
+  rule = 'Rules: \n\n1. Top 10 upvoted posts from last month will enter the contest. \n\n2. If the post is flaired as "Small Boots", it will be disqualified, and next most upvoted post will enter the contest. \n\n3. If you think a post deserves to be BotM, just upvote the corresponding comment. \n\n4. Please upvote up to 3 comments. \n\n5. All top level comments other than those by u/boot_size_judge will be removed. '
   conclusion = "The winner will be announced in one week. "
   
-  comment = "[{title}]({link}), by {op}"
+  comment = "[{title}]({link}), by u/{op}"
   
   winner_title = ""
   winner_body = ""
