@@ -51,8 +51,8 @@ class vote:
 			                "comment_id": c.id, 
 			                "created": int(s.created_utc),
 							"comment_perma": c.permalink,
-							"remove": 0
-							"isSunday": status
+							"remove": 0,
+							"isSunday": status,
 							"reported": 0})
 
 		log("[VOTE]Post id added to database, id=" + s.id)
@@ -87,12 +87,12 @@ class vote:
 				posts = list_post[:100]
 				list_post = []
 			
-			s_list = r.info(posts)
-			c_list = r.info(comments)
+			s_list = list(r.info(posts))
+			c_list = list(r.info(comments))
 			
-			log("[VOTE]" + str(len(list1)) + " Comments load for link flair")
+			log("[VOTE]" + str(len(s_list)) + " Comments load for link flair")
 
-			for i in range len(s_list):
+			for i in range(len(s_list)):
 				s = s_list[i]
 				c = c_list[i]
 				post = get_post(s.id, "id")
@@ -216,8 +216,8 @@ class vote:
 def modlog():
 	for log in r.subreddit(config.subreddit).mod.log(action = "removelink", limit=25):
 		id = (log.target_fullname)[3:]
-		if (search_id(id, "id")):
-			post = get_post(id)
+		if (search_id(id)):
+			post = get_post(id, "id")
 			post['watchlist_submission'] = 0
 			post['watchlist_comment'] = 0
 			post["remove"] = 1;
@@ -364,5 +364,5 @@ j = 0
 vote.check_score_comment()
 vote.check_score_submission()
 
-#while True:
-	#main_loop()
+while True:
+	main_loop()
