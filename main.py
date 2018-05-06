@@ -366,8 +366,4 @@ vote.check_score_comment()
 vote.check_score_submission()
 
 while True:
-<<<<<<< HEAD
 	main_loop()
-=======
-	main_loop()
->>>>>>> c469e5cfb7486ddd76521b6a2d8b765fdc2b472b
