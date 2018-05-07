@@ -1,4 +1,4 @@
-import time
+from datetime import datetime, time
 import os
 import praw
 import requests
@@ -32,9 +32,10 @@ class vote:
 		global db, i
 		
 		text = formats.vote.text
-		if (not isSunday):
-			text = text + formats.vote.notSunday
-		text = text + formats.footer
+		if (isSunday):
+			text = text + formats.vote.sunday + formats.footer
+		else:
+			text = text + formats.vote.notSunday + formats.footer
 		c = s.reply(text)
 		c.mod.distinguish(how='yes', sticky = True)
 		log("[VOTE]Comment posted, id=" + c.id)
@@ -214,13 +215,15 @@ class vote:
 			time.sleep(1)
 
 def modlog():
-	for log in r.subreddit(config.subreddit).mod.log(action = "removelink", limit=25):
-		id = (log.target_fullname)[3:]
+	for s in r.subreddit(config.subreddit).mod.log(action = "removelink", limit=25):
+		id = (s.target_fullname)[3:]
 		if (search_id(id)):
 			post = get_post(id, "id")
-			post['watchlist_submission'] = 0
-			post['watchlist_comment'] = 0
-			post["remove"] = 1;
+			if (post["remove"] == 0):
+				post['watchlist_submission'] = 0
+				post['watchlist_comment'] = 0
+				post["remove"] = 1;
+				log("[REMO] 1 link removed based on mod log")
 
 def get_post(id, type):
 	global db
@@ -242,7 +245,7 @@ class botm:
 	def contest():
 		global db
 
-		if (True):
+		if (int(time.strftime('%e')) == 1):
 			month = int(time.strftime('%m')) - 2
 			m = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 			if (month == -1):
@@ -309,9 +312,6 @@ def main_loop():
 			vote.reply_comment(s)
 
 	if (i != 0) or (j != 0):
-		#write to database
-		with open('database.json', 'w') as outfile:
-			json.dump(db, outfile)
 		log("[MAIN]{} new post processed, {} watchlist post processed. Going to sleep...".format(i, j))
 		i = 0
 		j = 0
@@ -323,6 +323,10 @@ def main_loop():
 	
 	modlog()
 
+	#write to database
+	with open('database.json', 'w') as outfile:
+		json.dump(db, outfile)
+
 	time.sleep(10)
 
 #-----------------------------------------------------------------
@@ -332,8 +336,8 @@ db = {}
 if (os.stat("database.json").st_size == 0):
 	db = {"posts":[],
 	      "botm":[],
-		  "archive":[],
-		  "top100":[]}
+		"archive":[],
+		"top100":[]}
 	log("[MAIN]Database Created")
 else:
 	db = json.load(open('database.json'))
@@ -348,7 +352,19 @@ r = praw.Reddit(username = config.credentials.username,
 				user_agent = "boot_size_judge v0.1 by u/le_haos")
 log("[MAIN]Logged in!")
 
+#determine the value for isSunday
 isSunday = False
+now = datetime.now().time()
+start = datetime.strptime('18:0:0', '%H:%M:%S').time()
+end = datetime.strptime('6:0:0', '%H:%M:%S').time()
+if (int(time.strftime('%w')) == 0):
+	isSunday = True
+elif (int(time.strftime('%w')) == 1 and now < end):
+	isSunday = True
+elif (int(time.strftime('%w')) == 7 and now > start):
+	isSunday = True
+
+log("isSunday is set to " + str(isSunday))
 
 #schedule jobs
 schedule.every().saturday.at("18:00").do(vote.isSunday_true)
@@ -364,6 +380,7 @@ j = 0
 
 vote.check_score_comment()
 vote.check_score_submission()
+modlog()
 
 while True:
 	main_loop()
