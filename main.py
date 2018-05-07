@@ -29,7 +29,7 @@ class vote:
 		log ("[VOTE]Small boot Sunday Ended")
 
 	def reply_comment(s):
-		global db, i
+		global db, i, isSunday
 		
 		text = formats.vote.text
 		if (isSunday):
