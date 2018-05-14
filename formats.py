@@ -22,5 +22,5 @@ class report:
 class remove_message:
   smallboot = 'Hello {op}, \n\nThank you for your post! Unfortunately, due to the score on [this comment](url) is too low, your post is automatically removed under rule 3b: \n\n---\n\n>Try to make sure your post has good rhyme/meter. Good rhyme/meter is "True BootTooBig" while bad rhyme/meter is "Small Boots." If a "Small Boots" post is posted outside of Small Boots Sunday, it will be removed. Low effort posts will also be removed. At the moment, final discretion is up to the mods. \n\nYou are welcome to try it again on Small Boots Sunday. \n\n--- \n\nIf you have any further questions, please feel free to [message the moderators](https://www.reddit.com/message/compose?to=%2Fr%2Fboottoobig&subject=My+post+is+removed+incorrectly)'
 
-footer = "---\n\n^I ^am ^a ^bot, ^click [^here](https://www.reddit.com/message/compose?to=le_haos&subject=[BOT-BSJ]) ^to ^contact ^my ^human, ^for ^asking ^questions ^and/or ^reporting ^bot ^error(s)."
+footer = "---\n\nBoot_Size_Judge v0.2.2 (beta) | [GitHub](https://github.com/aguamenti78/boot_size_judge/) | Contact: [bot maker](https://www.reddit.com/message/compose?to=le_haos&subject=[BSJ]) / [Mod Team](https://www.reddit.com/message/compose?to=%2Fr%2Fboottoobig)"
 
