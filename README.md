@@ -2,7 +2,7 @@ Created by aguamenti78, reddit username: [u/le_haos](https://www.reddit.com/user
 
 ## Content
 
-* [About](#About)
+* [About](#about)
 * [Current Feature](#current-feature)
 * [Upcoming Feature](#upcoming-feature)
 * [Hardware and Software Info](#hardware-and-software-info)
