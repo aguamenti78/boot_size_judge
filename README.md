@@ -18,7 +18,9 @@ subreddit url: [https://www.reddit.com/r/boottoobig](https://www.reddit.com/r/bo
 ## Hardware and Software Info
 
 Hosted on Raspberry Pi 3 Model B, Raspbian Stretch
+
 Python 3.5.3
+
 Praw v5.4.0
 
 ## License
