@@ -6,7 +6,7 @@ bot account url: [https://www.reddit.com/user/boot_size_judge](https://www.reddi
 
 subreddit url: [https://www.reddit.com/r/boottoobig](https://www.reddit.com/r/boottoobig)
 
-## Content
+## Contents
 
 * [Current Feature](#current-feature)
 * [Upcoming Feature](#upcoming-feature)
