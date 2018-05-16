@@ -23,6 +23,33 @@ Python 3.5.3
 
 Praw v5.4.0
 
+## Change Log
+
+#v0.2.2
+
+1. fixed a bug where a post is removed based on other post comment
+
+2. added class botm
+
+3. added monitoring mod log function
+
+#v0.2.1
+
+1. hotfix some bugs
+
+2. changes api request in vote.check_score_comment, api call numbers decrease to half of original.
+
+#v0.2
+
+1. added flairing post based on bot comment score function
+
+2. added flairing "True BTB" based on post score and post flair function
+
+3. change the database format from .txt to .json
+
+#v0.1
+
+Initial Release
 ## License
 
 MIT License, check LICENSE file for more info
