@@ -3,11 +3,11 @@ Created by aguamenti78, reddit username: [u/le_haos](https://www.reddit.com/user
 ## Content
 
 * [About](#About)
-* [Current Feature](#Current-Feature)
-* [Upcoming Feature](#Upcoming-Feature)
-* [Hardware and Software Info](#Hardware-and-Software-Info)
-* [Change Log](#Change-Log)
-* [License](#License)
+* [Current Feature](#current-feature)
+* [Upcoming Feature](#upcoming-feature)
+* [Hardware and Software Info](#hardware-and-software-info)
+* [Change Log](#change-log)
+* [License](#license)
 
 ## About
 
