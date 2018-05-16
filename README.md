@@ -1,5 +1,14 @@
 Created by aguamenti78, reddit username: [u/le_haos](https://www.reddit.com/user/le_haos)
 
+## Content
+
+* [About](#About)
+* [Current Feature](#Current-Feature)
+* [Upcoming Feature](#Upcoming-Feature)
+* [Hardware and Software Info](#Hardware-and-Software-Info)
+* [Change Log](#Change-Log)
+* [License](#License)
+
 ## About
 
 This bot is used to help moderate community r/boottoobig
