@@ -25,7 +25,7 @@ Praw v5.4.0
 
 ## Change Log
 
-**v0.2.2** Released on: 2018/5/6
+[**v0.2.2**](https://github.com/aguamenti78/boot_size_judge/releases/tag/v0.2.2) Released on: 2018/5/6
 
 1. fixed a bug where a post is removed based on other post comment
 
@@ -33,13 +33,13 @@ Praw v5.4.0
 
 3. added monitoring mod log function
 
-**v0.2.1** Released on: 2018/4/29
+[**v0.2.1**](https://github.com/aguamenti78/boot_size_judge/releases/tag/v0.2.1) Released on: 2018/4/29
 
 1. hotfix some bugs
 
 2. changes api request in vote.check_score_comment, api call numbers decrease to half of original.
 
-**v0.2** Released on: 2018/4/28
+[**v0.2**](https://github.com/aguamenti78/boot_size_judge/releases/tag/v0.2) Released on: 2018/4/28
 
 1. added flairing post based on bot comment score function
 
@@ -47,7 +47,7 @@ Praw v5.4.0
 
 3. change the database format from .txt to .json
 
-**v0.1** Released on: 2018/4/28
+[**v0.1**](https://github.com/aguamenti78/boot_size_judge/releases/tag/v0.1) Released on: 2018/4/28
 
 1. Initial Release
 
