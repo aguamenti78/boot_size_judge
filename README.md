@@ -34,7 +34,7 @@ Praw v5.4.0
 
 ## Change Log
 
-[**v0.2.2**](/releases/tag/v0.2.2) Released on: 2018/5/6
+[**v0.2.2**](https://github.com/aguamenti78/boot_size_judge/releases/tag/v0.2.2) Released on: 2018/5/6
 
 1. fixed a bug where a post is removed based on other post comment
 
