@@ -1,19 +1,19 @@
-Created by aguamenti78, reddit username: [u/le_haos](https://www.reddit.com/user/le_haos)
+## About
+
+This bot is used to help moderate community r/boottoobig, created by [aguamenti78](https://github.com/aguamenti78), reddit username: [u/le_haos](https://www.reddit.com/user/le_haos)
+
+bot account url: [https://www.reddit.com/user/boot_size_judge](https://www.reddit.com/user/boot_size_judge)
+
+subreddit url: [https://www.reddit.com/r/boottoobig](https://www.reddit.com/r/boottoobig)
 
 ## Content
 
-* [About](#about)
 * [Current Feature](#current-feature)
 * [Upcoming Feature](#upcoming-feature)
 * [Hardware and Software Info](#hardware-and-software-info)
 * [Change Log](#change-log)
 * [License](#license)
 
-## About
-
-This bot is used to help moderate community r/boottoobig
-bot account url: [https://www.reddit.com/user/boot_size_judge](https://www.reddit.com/user/boot_size_judge)
-subreddit url: [https://www.reddit.com/r/boottoobig](https://www.reddit.com/r/boottoobig)
 
 ## Current Feature
 
