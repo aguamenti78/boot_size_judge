@@ -266,7 +266,7 @@ class vote:
 							rm = s.reply(text)
 							rm.mod.distinguish(how='yes', sticky = True)
 							s.mod.remove(spam = False)
-							log('[VOTE]Submission removed, id=' + s.id)
+							log('[REMO]Submission removed, id={}, reason={}'.format(s.id, 'comment score too low'))
 
 							post['watchlist_submission'] = 0
 							post['watchlist_comment'] = 0
