@@ -11,3 +11,11 @@ class thresholds:
 
 subreddit = "boottoobig"
 ignored_link_flair = ["Announcement", "BotM Contest"]
+modlist = ['epicblob', 
+			'hansolo2843', 
+			'AnonymousNumbers', 
+			'Kresley', 
+			'Le_haos', 
+			'18sp01', 
+			'FocusFon0', 
+			'boot_size_judge']
