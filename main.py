@@ -501,8 +501,7 @@ i = 0
 j = 0
 
 #main loop
-running = True
-while running:
+while True:
 
 	schedule.run_pending()
 
@@ -513,7 +512,7 @@ while running:
 	log("[MAIN]Obtaining 10 posts")
 	for s in r.subreddit(config.subreddit).new(limit=10):
 
-		if not search_id(s.id) and s.link_flair_text not in config.ignored_link_flair:
+		if not search_id(s.id) and s.link_flair_text not in config.ignored_link_flair and not s.is_self:
 
 			vote.reply_comment(s)
 
@@ -538,7 +537,7 @@ while running:
 	#if enter key is pressed, the loop will stop
 	if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
 
-		running = False
+		break
 
 #write to database
 with open('database.json', 'w') as outfile:
