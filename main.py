@@ -514,18 +514,29 @@ while True:
 
 		if not search_id(s.id) and s.link_flair_text not in config.ignored_link_flair and not s.is_self:
 
-			vote.reply_comment(s)
+			if (not s.is_self):
+
+				vote.reply_comment(s)
+
+			elif (s.author not in config.modlist):
+
+				#remove self post that is not a mod post
+				text = formats.remove_message.self_post.format(op = 'u/' + str(s.author))
+				rm = s.reply(text)
+				rm.mod.distinguish(how='yes', sticky = True)
+				s.mod.remove(spam = False)
+				log('[REMO]Submission removed, id={}, reason={}'.format(s.id, 'self post'))
 
 	if (i != 0) or (j != 0):
 
-		log("[MAIN]{} new post processed, {} watchlist post processed. Going to sleep...".format(i, j))
+		log("[MAIN]{} new post processed, {} watchlist post processed".format(i, j))
 		i = 0
 		j = 0
 		ft = False
 	
 	elif ft:
 
-		log("[MAIN]{} new post processed, {} watchlist post processed. Going to sleep...".format(i, j))
+		log("[MAIN]{} new post processed, {} watchlist post processed".format(i, j))
 		ft = False
 
 	#write to database
