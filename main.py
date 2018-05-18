@@ -11,16 +11,212 @@ import select
 import config
 import formats
 
-#add a time tag, print it in the terminal window, and cave it in log.txt
-def log(text):
+# +------------------------------------------------+
+# |                                                |
+# |                 CLASS myLog                    |
+# |                                                |
+# +------------------------------------------------+
 
-	text = time.strftime('%X %x %Z') + "	" + text
+class myLog:
 
-	with open ("log.txt", "a") as f:
+	new = 0
+	watch = 0
+	error_total = 0
+	error_new = 0
+	statusline = ""
+	currentTask = ""
+	qLog = []
+	length = 0
 
+	def __init__(self): 
+
+		#get the dimensions of terminal window
+		rows, columns = os.popen('stty size', 'r').read().split()
+		
+		#print last 200 line in the log.txt
+		r = open('log.txt','r') 
+
+		old_log = r.read().split("\n")
+		old_log = list(filter(None, old_log))
+
+		if (len(old_log) > 200):
+
+			old_log = old_log[-200:]
+
+		r.close()
+
+		for line in old_log:
+
+			print (line)
+
+		print ("-" * int(columns))
+
+		myLog.refresh_statusline(self)
+
+
+	def log(self, entry):
+
+		myLog.currentTask = entry
+		text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + entry
+		if ("[ERROR]" in entry):
+
+			myLog.error_new += 1
+			myLog.error_total += 1
+
+		myLog.qLog.append(text)
+		myLog.refresh_statusline(self)
+
+	def log_force(self, entry):
+
+		myLog.currentTask = entry
+		text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + entry
+
+		if ("[ERROR]" in entry):
+
+			myLog.error_new += 1
+			myLog.error_total += 1
+
+		#open the log.txt in append mode and write in the new log
+		f = open('log.txt','a') 
 		f.write(text + "\n")
+		f.close()
 
-	print(text)
+		#clear the terminal and statusline
+		os.system('cls' if os.name == 'nt' else 'clear')
+		myLog.statusline = ''
+
+		#get the dimensions of terminal window
+		rows, columns = os.popen('stty size', 'r').read().split()
+		
+		#print everything in the log.txt
+		r = open('log.txt','r')
+ 
+		old_log = r.read().split("\n")
+		old_log = list(filter(None, old_log))
+
+		if (len(old_log) > 200):
+
+			old_log = old_log[-200:]
+
+		r.close()
+
+		for line in old_log:
+
+			print (line)
+
+		print ("-" * int(columns))
+		myLog.refresh_statusline(self)
+
+
+	def printlog(self):
+
+		if (myLog.new > 0 or myLog.watch > 0 or myLog.error_new > 0):
+
+			#format the summary line
+			text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + formats.summaryline.format(myLog.new, myLog.watch, myLog.error_new, myLog.error_total)
+			myLog.qLog.append(text)
+
+			#open the log.txt in append mode and write in the new log
+			f = open('log.txt','a') 
+
+			for line in myLog.qLog:
+
+				f.write(line + "\n")
+
+			#close the log.txt
+			f.close()
+
+			#clear the terminal and statusline
+			os.system('cls' if os.name == 'nt' else 'clear')
+			myLog.statusline = ''
+
+			#get the dimensions of terminal window
+			rows, columns = os.popen('stty size', 'r').read().split()
+		
+			#print everything in the log.txt
+			r = open('log.txt','r')
+ 
+			old_log = r.read().split("\n")
+			old_log = list(filter(None, old_log))
+
+			if (len(old_log) > 200):
+
+				old_log = old_log[-200:]
+
+			r.close()
+
+			#print the seperate line
+			for line in old_log:
+
+				print (line)
+
+			print ("-" * int(columns))
+
+		#refresh statusline
+		myLog.refresh_statusline(self)
+
+		#clear the variable value
+		myLog.clear(self)
+
+	#refresh statusline
+	def refresh_statusline(self):
+
+		#delete the previous status line
+		if (myLog.length > 0):
+
+			print ("\b" * len(myLog.statusline), end="", flush = True)
+
+		#format the uptime
+		uptime = int(time.time() - start_time)
+		min = int(uptime / 60)
+		duration = ""
+
+		if (min < 1):
+
+			duration = "< 1 min"
+
+		elif (min < 60):
+
+			duration = "{} mins".format(min)
+
+		else:
+
+			hour = int(min / 60)
+			min = int(min - hour * 60)
+
+			if (hour == 1):
+
+				duration = "{} hr {} mins".format(hour, min)
+
+			else:
+
+				duration = "{} hrs {} mins".format(hour, min)
+
+		#store and print the new status line
+		line0 = formats.statusline.format(time.strftime("%Y/%m/%d %H:%M:%S %Z"), myLog.error_total, duration, myLog.currentTask)
+		line1 = line0
+
+		if myLog.length > len(line0):
+
+			line1 = line0 + " " * (myLog.length - len(line0))
+			myLog.statusline = line1
+
+		else:
+
+			myLog.statusline = line0
+
+		myLog.length = len(line0)
+		print (line1, end="", flush = True)
+
+
+	#clear all value except statusline and error_total
+	def clear(self):
+
+		myLog.new = 0
+		myLog.watch = 0
+		myLog.error_new = 0
+		myLog.qLog = []
+
 
 #monitor mod log from human removing post
 def modlog():
@@ -32,7 +228,7 @@ def modlog():
 				post['watchlist_submission'] = 0
 				post['watchlist_comment'] = 0
 				post["remove"] = 1;
-				log("[REMO] 1 link removed based on mod log")
+				logging.log("[REMO] 1 link removed based on mod log")
 
 #retrive info from db
 def get_post(id, type):
@@ -51,6 +247,12 @@ def search_id(id):
 		cs.append(post["id"])
 	
 	return id in cs
+
+# +------------------------------------------------+
+# |                                                |
+# |                  CLASS sbs                     |
+# |                                                |
+# +------------------------------------------------+
 
 #class Small Boot Sunday: store the issunday value
 class sbs:
@@ -75,7 +277,7 @@ class sbs:
 
 			self.isSunday = True
 
-		log("isSunday is set to " + str(self.isSunday))
+		logging.log_force("[VOTE]isSunday is set to " + str(self.isSunday))
 
 	#return the isSunday Value
 	def get(self):
@@ -105,12 +307,18 @@ class sbs:
 
 		log ("[VOTE]Small boot Sunday Ended")
 
+# +------------------------------------------------+
+# |                                                |
+# |                  CLASS vote                    |
+# |                                                |
+# +------------------------------------------------+
+
 class vote:
 
 	#reply the bot comment on new post
 	def reply_comment(s):
 
-		global db, i
+		global db
 		
 		text = formats.vote.text
 		if (sunday.get()):
@@ -124,7 +332,7 @@ class vote:
 		c = s.reply(text)
 		c.mod.distinguish(how='yes', sticky = True)
 
-		log("[VOTE]Comment posted, id=" + c.id)
+		logging.log("[VOTE]Comment posted, id=" + c.id)
 
 		#adding new post info into the database
 		status = 0
@@ -143,13 +351,13 @@ class vote:
 							"isSunday": status,
 							"reported": 0})
 
-		log("[VOTE]Post id added to database, id=" + s.id)
-		i += 1
+		logging.log("[VOTE]Post id added to database, id=" + s.id)
+		myLog.new += 1
 
 	#checking the comments' score to decide the link flair and remove
 	def check_score_comment():
 
-		global db, j
+		global db
 
 		#gather the comments' id into a list
 		list_comment = []
@@ -190,7 +398,7 @@ class vote:
 			s_list = list(r.info(posts))
 			c_list = list(r.info(comments))
 			
-			log("[VOTE]" + str(len(c_list)) + " Comments load for link flair")
+			logging.log("[VOTE]" + str(len(c_list)) + " Comments load for link flair")
 
 			for i in range(len(s_list)):
 
@@ -209,18 +417,18 @@ class vote:
 							#flair the post "True BootTooBig"
 
 							s = r.submission(post['id'])
-							log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
+							logging.log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
 
 							if (s.link_flair_text == None):
 
 								s.mod.flair(text = "True BootTooBig", css_class = None)
-								log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
+								logging.log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 
 							#change the value in db base
 							post['watchlist_comment'] = 0
 							post['watchlist_submission'] = 1
 
-							j += 1
+							myLog.watch += 1
 							time.sleep(2)
 
 						elif (c.score < config.thresholds.lower):
@@ -232,11 +440,11 @@ class vote:
 							if (s.link_flair_text == None):
 
 								s.mod.flair(text = "Small Boots", css_class = None)
-								log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
+								logging.log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
 
 							post['watchlist_comment'] = 0
 
-							j += 1
+							myLog.watch += 1
 							time.sleep(2)
 
 					else:
@@ -247,12 +455,12 @@ class vote:
 							s = r.submission(post['id'])
 
 							s.mod.flair(text = "True BootTooBig", css_class = None)
-							log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
+							logging.log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 
 							post['watchlist_comment'] = 0
 							post['watchlist_submission'] = 1
 
-							j += 1
+							myLog.watch += 1
 							time.sleep(2)
 
 						elif (c.score < config.thresholds.remove):
@@ -266,13 +474,13 @@ class vote:
 							rm = s.reply(text)
 							rm.mod.distinguish(how='yes', sticky = True)
 							s.mod.remove(spam = False)
-							log('[REMO]Submission removed, id={}, reason={}'.format(s.id, 'comment score too low'))
+							logging.log('[VOTE]Submission removed, id=' + s.id)
 
 							post['watchlist_submission'] = 0
 							post['watchlist_comment'] = 0
 							post['remove'] = 1
 
-							j += 1
+							myLog.watch += 1
 							time.sleep(4)
 
 						elif (c.score < config.thresholds.lower):
@@ -288,9 +496,9 @@ class vote:
 								s.report(formats.report.smallboot)
 								post["reported"] = 1
 
-							log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
+							logging.log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
 							
-							j += 1
+							myLog.watch += 1
 							time.sleep(3)
 
 				else:
@@ -303,12 +511,10 @@ class vote:
 			time.sleep(1)
 				
 
-		return j
-
 	#checking the posts' score to decide the "True BTB"user flair
 	def check_score_submission():
 
-		global db, r
+		global db
 
 		#gather the posts' id into a list
 		list0 = []
@@ -335,7 +541,7 @@ class vote:
 				list0 = []
 
 			submissions = r.info(list1)
-			log("[VOTE]" + str(len(list1)) + " Posts load for link flair")
+			logging.log("[VOTE]" + str(len(list1)) + " Posts load for link flair")
 
 			for s in submissions:
 
@@ -344,7 +550,7 @@ class vote:
 				if ("True BootTooBig" in s.link_flair_text and s.score > 5000):
 
 					#give the user a "True BTB" flair
-					log("[VOTE]Post loaded for user flair, id = " + s.id)
+					logging.log("[VOTE]Post loaded for user flair, id = " + s.id)
 					flair_text = ""
 					css_class = "btb"
 
@@ -374,15 +580,24 @@ class vote:
 
 					post['watchlist_submission'] = 0
 
-					log('[VOTE]Flair changed, op = ' + str(s.author))
+					logging.log('[VOTE]Flair changed, op = ' + str(s.author))
 
+					myLog.watch += 1
 					time.sleep(3)
 
 				elif (not "True BootTooBig" in s.link_flair_text):
 
+					logging.log('[VOTE]Submission remvoed from watchlist submission, id = ' + s.id)
+					myLog.watch += 1
 					post['watchlist_submission'] = 0
 
 			time.sleep(1)
+
+# +------------------------------------------------+
+# |                                                |
+# |                  CLASS botm                    |
+# |                                                |
+# +------------------------------------------------+
 
 class botm:
 
@@ -411,12 +626,12 @@ class botm:
 
 			contest = r.subreddit(config.subreddit).submit(title = title, selftext = body)
 			contest.mod.flair(text = "BotM Contest", css_class = None)
-			log("[BOTM]Contest Thread Posted")
+			logging.log("[BOTM]Contest Thread Posted")
 
 			db["botm"] = {"id": contest.id, 
 						  "date": month + year,
 						  "comments":[]}
-			log("[VOTE]Contest id added to database, id=" + contest.id)
+			logging.log("[VOTE]Contest id added to database, id=" + contest.id)
 
 			time.sleep(3)
 
@@ -446,37 +661,47 @@ class botm:
 
 					break
 
-			log("[BOTM]Contest Comment Posted")
+			logging.log("[BOTM]Contest Comment Posted")
 
 			#sticky the contest thread
 			contest.mod.sticky()
 			contest.mod.contest_mode(state=True)
-			log("[BOTM]Contest Thread stickied, and contest mode enabled")
+			logging.log("[BOTM]Contest Thread stickied, and contest mode enabled")
 
 			time.sleep(1)
 
 			with open('database.json', 'w') as outfile:
 				json.dump(db, outfile)
 
-#-----------------------------------------------------------------
-#MAIN PROGRAM
-#-----------------------------------------------------------------
+# +------------------------------------------------+
+# |                                                |
+# |                 MAIN PROGRAM                   |
+# |                                                |
+# +------------------------------------------------+
+
+#start timer
+start_time = time.time()
+
+#initiate sunday and myLog
+logging = myLog()
+sunday = sbs()
+
 #load database from database.json
 db = {}
 if (os.stat("database.json").st_size == 0):
 
 	db = {"posts":[],
-		  "botm":[],
+		"botm":[],
 		"archive":[],
 		"top100":[]}
 
-	log("[MAIN]Database Created")
+	logging.log_force("[MAIN]Database Created")
 
 else:
 
 	db = json.load(open('database.json'))
 
-	log("[MAIN]Database Loaded")
+	logging.log_force("[MAIN]Database Loaded")
 
 #log into reddit
 r = praw.Reddit(username = config.credentials.username, 
@@ -485,20 +710,12 @@ r = praw.Reddit(username = config.credentials.username,
 				client_secret = config.credentials.client_secret, 
 				user_agent = "boot_size_judge v0.1 by u/le_haos")
 
-log("[MAIN]Logged in!")
-
-#initiiate sunday
-sunday = sbs()
+logging.log_force("[MAIN]Logged in!")
 
 #schedule jobs
 schedule.every().saturday.at("18:00").do(sunday.setTrue)
 schedule.every().monday.at("6:00").do(sunday.setFalse)
 schedule.every().day.at("0:01").do(botm.contest)
-
-ft = True
-st = False
-i = 0
-j = 0
 
 #main loop
 while True:
@@ -509,10 +726,10 @@ while True:
 	vote.check_score_submission()
 	modlog()
 	
-	log("[MAIN]Obtaining 10 posts")
+	logging.log("[MAIN]Obtaining 10 posts")
 	for s in r.subreddit(config.subreddit).new(limit=10):
 
-		if not search_id(s.id) and s.link_flair_text not in config.ignored_link_flair and not s.is_self:
+		if not search_id(s.id) and s.link_flair_text not in config.ignored_link_flair:
 
 			if (not s.is_self):
 
@@ -525,23 +742,15 @@ while True:
 				rm = s.reply(text)
 				rm.mod.distinguish(how='yes', sticky = True)
 				s.mod.remove(spam = False)
-				log('[REMO]Submission removed, id={}, reason={}'.format(s.id, 'self post'))
-
-	if (i != 0) or (j != 0):
-
-		log("[MAIN]{} new post processed, {} watchlist post processed".format(i, j))
-		i = 0
-		j = 0
-		ft = False
-	
-	elif ft:
-
-		log("[MAIN]{} new post processed, {} watchlist post processed".format(i, j))
-		ft = False
+				logging.log('[REMO]Submission removed, id={}, reason={}'.format(s.id, 'self post'))
 
 	#write to database
 	with open('database.json', 'w') as outfile:
+
 		json.dump(db, outfile)
+
+	logging.log('[MAIN]Sleeping')
+	logging.printlog()
 
 	time.sleep(10)
 	
@@ -550,10 +759,4 @@ while True:
 
 		break
 
-#write to database
-with open('database.json', 'w') as outfile:
-
-		json.dump(db, outfile)
-
-log("[MAIN]Write to database")
-log("[MAIN]Program terminated")
+logging.log_force("[MAIN]Program terminated\n")
