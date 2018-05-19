@@ -25,6 +25,7 @@ class myLog:
 	error_new = 0
 	statusline = ""
 	currentTask = ""
+	remove = 0
 	qLog = []
 	length = 0
 
@@ -62,6 +63,10 @@ class myLog:
 
 			myLog.error_new += 1
 			myLog.error_total += 1
+
+		if ("[REMO]" in entry):
+
+			myLog.remove += 1
 
 		myLog.qLog.append(text)
 		myLog.refresh_statusline(self)
@@ -110,10 +115,10 @@ class myLog:
 
 	def printlog(self):
 
-		if (myLog.new > 0 or myLog.watch > 0 or myLog.error_new > 0):
+		if (myLog.new > 0 or myLog.watch > 0 or myLog.error_new > 0 or myLog.remove > 0):
 
 			#format the summary line
-			text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + formats.summaryline.format(myLog.new, myLog.watch, myLog.error_new, myLog.error_total)
+			text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + formats.summaryline.format(myLog.new, myLog.watch, myLog.remove, myLog.error_new, myLog.error_total)
 			myLog.qLog.append(text)
 
 			#open the log.txt in append mode and write in the new log
@@ -216,6 +221,7 @@ class myLog:
 		myLog.watch = 0
 		myLog.error_new = 0
 		myLog.qLog = []
+		myLog.remove = 0
 
 
 #monitor mod log from human removing post
@@ -227,8 +233,8 @@ def modlog():
 			if (post["remove"] == 0):
 				post['watchlist_submission'] = 0
 				post['watchlist_comment'] = 0
-				post["remove"] = 1;
-				logging.log("[REMO] 1 link removed based on mod log")
+				post["remove"] = 1
+				logging.log("[REMO]1 link removed based on mod log, id = " + id)
 
 #retrive info from db
 def get_post(id, type):
@@ -291,21 +297,21 @@ class sbs:
 		
 		if (self.isSunday):
 			
-			log ("[VOTE]Small boot Sunday Started")
+			logging.log("[VOTE]Small boot Sunday Started")
 		
 		else:
-			log ("[VOTE]Small boot Sunday Ended")
+			logging.log("[VOTE]Small boot Sunday Ended")
 	def setTrue(self):
 		
 		self.isSunday = True
 
-		log ("[VOTE]Small boot Sunday Started")
+		logging.log("[VOTE]Small boot Sunday Started")
 
 	def setFalse(self):
 
 		self.isSunday = False
 
-		log ("[VOTE]Small boot Sunday Ended")
+		logging.log("[VOTE]Small boot Sunday Ended")
 
 # +------------------------------------------------+
 # |                                                |
@@ -353,6 +359,7 @@ class vote:
 
 		logging.log("[VOTE]Post id added to database, id=" + s.id)
 		myLog.new += 1
+		print ("1")
 
 	#checking the comments' score to decide the link flair and remove
 	def check_score_comment():
@@ -431,7 +438,7 @@ class vote:
 							myLog.watch += 1
 							time.sleep(2)
 
-						elif (c.score < config.thresholds.lower):
+						elif (c.score < config.thresholds.lower and s.link_flair_text != "Small Boots"):
 
 							#flair the post "Small Boot" and report the post
 
@@ -466,7 +473,6 @@ class vote:
 						elif (c.score < config.thresholds.remove):
 
 							#remove the post
-
 							s = r.submission(post['id'])
 
 							text = formats.remove_message.smallboot
@@ -474,7 +480,7 @@ class vote:
 							rm = s.reply(text)
 							rm.mod.distinguish(how='yes', sticky = True)
 							s.mod.remove(spam = False)
-							logging.log('[VOTE]Submission removed, id=' + s.id)
+							logging.log('[REMO]Submission removed, id=' + s.id)
 
 							post['watchlist_submission'] = 0
 							post['watchlist_comment'] = 0
@@ -483,7 +489,7 @@ class vote:
 							myLog.watch += 1
 							time.sleep(4)
 
-						elif (c.score < config.thresholds.lower):
+						elif (c.score < config.thresholds.lower and s.link_flair_text != "Small Boots"):
 
 							#flair the post "Small Boot" and report the post
 
