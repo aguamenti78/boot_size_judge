@@ -1,10 +1,10 @@
 from datetime import datetime, time
+import sqlite3
 import os
 import praw
 import requests
 import time
 import schedule
-import json
 import sys
 import select
 
@@ -118,8 +118,8 @@ class myLog:
 		if (myLog.new > 0 or myLog.watch > 0 or myLog.error_new > 0 or myLog.remove > 0):
 
 			#format the summary line
-			text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + formats.summaryline.format(myLog.new, myLog.watch, myLog.remove, myLog.error_new, myLog.error_total)
-			myLog.qLog.append(text)
+			#text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + formats.summaryline.format(myLog.new, myLog.watch, myLog.remove, myLog.error_new, myLog.error_total)
+			#myLog.qLog.append(text)
 
 			#open the log.txt in append mode and write in the new log
 			f = open('log.txt','a') 
@@ -228,31 +228,92 @@ class myLog:
 def modlog():
 	for s in r.subreddit(config.subreddit).mod.log(action = "removelink", limit=25):
 		id = (s.target_fullname)[3:]
-		if (search_id(id)):
-			post = get_post(id, "id")
-			if (post["remove"] == 0):
-				post['watchlist_submission'] = 0
-				post['watchlist_comment'] = 0
-				post["remove"] = 1
-				logging.log("[REMO]1 link removed based on mod log, id = " + id)
+		with db.conn:
+			db.c.execute("UPDATE posts SET removed = 1 WHERE id = ?", (id,))
+			db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (id,))
+			db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (id,))
 
-#retrive info from db
-def get_post(id, type):
-	global db
+# +------------------------------------------------+
+# |                                                |
+# |                  CLASS myDB                    |
+# |                                                |
+# +------------------------------------------------+
 
-	for post in db['posts']:
-		if (post[type] == id):
-			return post
-
-#search id in database
-def search_id(id):
-	global db
+class myDB:
 	
-	cs = []
-	for post in db["posts"]:
-		cs.append(post["id"])
-	
-	return id in cs
+	def __init__(self):
+
+		#load database from database.json
+		self.conn = sqlite3.connect('database.db')
+		self.c = self.conn.cursor()
+
+		if (os.stat("database.db").st_size == 0):
+
+			self.c.execute("""CREATE TABLE posts (
+							id text,
+							hash text,
+							watchlist_submission integer,
+							watchlist_comment integer,
+							comment_id text,
+							created integer,
+							removed integer,
+							deleted integer,
+							isSunday integer,
+							reported integer
+							)""")
+
+			self.c.execute("""CREATE TABLE top100 (
+						id text,
+						hash text
+						)""")
+						
+			self.c.execute("""CREATE TABLE botm (
+						month integer, 
+						year integer, 
+						post_id text, 
+						comment_id text
+						)""")
+
+			self.conn.commit()
+			
+			logging.log_force('[MAIN]Database created')
+
+		else:
+
+			logging.log_force('[MAIN]Database loaded')
+
+	def insert_post(self, s, c):
+
+		with self.conn:
+			self.c.execute("INSERT INTO posts VALUES (:id, :hash, :watchlist_submission, :watchlist_comment, :comment_id, :created, :removed, :deleted, :isSunday, :reported)", 
+							{'id': str(s.id), 
+							"hash": None, 
+							'watchlist_submission': 0,
+							'watchlist_comment': 1, 
+							"comment_id": str(c.id),
+							"created": int(s.created),
+							"removed": 0,
+							"deleted": 0,
+							"isSunday": sunday.get(),
+							"reported": 0})
+							
+			logging.log("[MAIN]New post added to the database, id = " + str(s.id))
+			myLog.new += 1
+
+	def get_posts(self, return_type, where_type, where):
+
+		self.c.execute("SELECT {} FROM posts WHERE '{}' = '{}'".format(return_type, where_type, where))
+		return self.c.fetchall()
+
+	def insert_top100(self, id, hash):
+
+		with self.conn:
+			self.c.execute("INSERT INTO posts VALUES (:id, :hash)", {'id': id, "hash": hash})
+			
+	def insert_botm(self, month, year, post_id, comment_id):
+
+		with self.conn:
+			self.c.execute("INSERT INTO posts VALUES (:month, :year, :post_id, :comment_id)", {'month': month, 'year': year, 'post_id': post_id, ':comment_id': comment_id})
 
 # +------------------------------------------------+
 # |                                                |
@@ -297,21 +358,21 @@ class sbs:
 		
 		if (self.isSunday):
 			
-			logging.log("[VOTE]Small boot Sunday Started")
+			logging.log_force("[VOTE]Small boot Sunday Started")
 		
 		else:
-			logging.log("[VOTE]Small boot Sunday Ended")
+			logging.log_force("[VOTE]Small boot Sunday Ended")
 	def setTrue(self):
 		
 		self.isSunday = True
 
-		logging.log("[VOTE]Small boot Sunday Started")
+		logging.log_force("[VOTE]Small boot Sunday Started")
 
 	def setFalse(self):
 
 		self.isSunday = False
 
-		logging.log("[VOTE]Small boot Sunday Ended")
+		logging.log_force("[VOTE]Small boot Sunday Ended")
 
 # +------------------------------------------------+
 # |                                                |
@@ -323,8 +384,6 @@ class vote:
 
 	#reply the bot comment on new post
 	def reply_comment(s):
-
-		global db
 		
 		text = formats.vote.text
 		if (sunday.get()):
@@ -340,48 +399,33 @@ class vote:
 
 		logging.log("[VOTE]Comment posted, id=" + c.id)
 
-		#adding new post info into the database
-		status = 0
-		if (sunday.get()):
-			status = 1
-		db["posts"].append({"id": s.id, 
-							"op": "u/" + str(s.author),
-							"title": s.title, 
-							"hash": None, 
-							"watchlist_submission": 0, 
-							"watchlist_comment": 1, 
-							"comment_id": c.id, 
-							"created": int(s.created_utc),
-							"comment_perma": c.permalink,
-							"remove": 0,
-							"isSunday": status,
-							"reported": 0})
+		#adding new post info into the database	
+		db.insert_post(s, c)
 
-		logging.log("[VOTE]Post id added to database, id=" + s.id)
+		logging.log("[VOTE]New post added to database, id=" + s.id)
 		myLog.new += 1
 		print ("1")
 
 	#checking the comments' score to decide the link flair and remove
 	def check_score_comment():
 
-		global db
-
 		#gather the comments' id into a list
 		list_comment = []
 		list_post = []
+		list0 = db.get_posts('*', 'watchlist_comment', 1)
 
-		for post in db["posts"]:
+		for post in list0:
 
-			if (post["watchlist_comment"] == 1):
 
-				if (time.time() - post['created']) < 86400:
+			if (time.time() - post['created']) < 86400:
 
-					list_post.append("t3_" + str(post['id']))
-					list_comment.append("t1_" + str(post['comment_id']))
+				list_comment.append("t1_" + str(post[4]))
+				list_post.append("t3_" + str(post[0]))
 
-				else:
+			else:
 
-					post['watchlist_comment'] = 0
+				with db.conn:
+					db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (post[0],))
 
 		#retrive the comments' info from reddit.com, 100 comments at a time
 		while (len(list_post) > 0):
@@ -390,7 +434,7 @@ class vote:
 
 				comments = list_comment[:100]
 				list_comment = list_comment[100:]
-
+				
 				posts = list_post[:100]
 				list_post = list_post[100:]
 
@@ -399,11 +443,8 @@ class vote:
 				comments = list_comment[:100]
 				list_comment = []
 
-				posts = list_post[:100]
-				list_post = []
-			
-			s_list = list(r.info(posts))
 			c_list = list(r.info(comments))
+			s_list = list(r.info(posts))
 			
 			logging.log("[VOTE]" + str(len(c_list)) + " Comments load for link flair")
 
@@ -412,44 +453,36 @@ class vote:
 				s = s_list[i]
 				c = c_list[i]
 
-				#retrive the post info from database
-				post = get_post(c.id, "comment_id")
-
+				#if the post already has a link flair remove it from watch comments
 				if (s.link_flair_text == None or s.link_flair_text == "Small Boots"):
 
-					if (post["isSunday"] == 1):
+					#check if the post is posted on small boot sunday
+					isSunday = db.get_posts('isSunday', 'id', "'8kl31d'")[0][0]
+					if (isSunday == 1):
 
-						if (c.score > config.thresholds.upper):
+						if (c.score > config.thresholds.upper and s.link_flair_text == None):
 
 							#flair the post "True BootTooBig"
+							s.mod.flair(text = "True BootTooBig", css_class = None)
+							logging.log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 
-							s = r.submission(post['id'])
-							logging.log('[VOTE]Submission loaded for post flair, id = ' + post["id"])
-
-							if (s.link_flair_text == None):
-
-								s.mod.flair(text = "True BootTooBig", css_class = None)
-								logging.log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
-
-							#change the value in db base
-							post['watchlist_comment'] = 0
-							post['watchlist_submission'] = 1
+							#change the value in database
+							with db.conn:
+								db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (s.id,))
+								db.c.execute("UPDATE posts SET watchlist_submission = 1 WHERE id = ?", (s.id,))
 
 							myLog.watch += 1
 							time.sleep(2)
 
-						elif (c.score < config.thresholds.lower and s.link_flair_text != "Small Boots"):
+						elif (c.score < config.thresholds.lower and s.link_flair_text == None):
 
 							#flair the post "Small Boot" and report the post
+							s.mod.flair(text = "Small Boots", css_class = None)
+							logging.log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
 
-							s = r.submission(post['id'])
-
-							if (s.link_flair_text == None):
-
-								s.mod.flair(text = "Small Boots", css_class = None)
-								logging.log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
-
-							post['watchlist_comment'] = 0
+							#change the value in database
+							with db.conn:
+								db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (s.id,))
 
 							myLog.watch += 1
 							time.sleep(2)
@@ -459,13 +492,13 @@ class vote:
 						if (c.score > config.thresholds.upper):
 
 							#flair the post "True BootTooBig"
-							s = r.submission(post['id'])
-
 							s.mod.flair(text = "True BootTooBig", css_class = None)
 							logging.log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
 
-							post['watchlist_comment'] = 0
-							post['watchlist_submission'] = 1
+							#change the value in database
+							with db.conn:
+								db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (s.id,))
+								db.c.execute("UPDATE posts SET watchlist_submission = 1 WHERE id = ?", (s.id,))
 
 							myLog.watch += 1
 							time.sleep(2)
@@ -473,8 +506,6 @@ class vote:
 						elif (c.score < config.thresholds.remove):
 
 							#remove the post
-							s = r.submission(post['id'])
-
 							text = formats.remove_message.smallboot
 							text = text.format(op = post['op'], url = post['comment_perma'])
 							rm = s.reply(text)
@@ -482,34 +513,32 @@ class vote:
 							s.mod.remove(spam = False)
 							logging.log('[REMO]Submission removed, id=' + s.id)
 
-							post['watchlist_submission'] = 0
-							post['watchlist_comment'] = 0
-							post['remove'] = 1
+							#change the value in database
+							with db.conn:
+								db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (s.id,))
+								db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (s.id,))
+								db.c.execute("UPDATE posts SET removed = 1 WHERE id = ?", (s.id,))
 
 							myLog.watch += 1
 							time.sleep(4)
 
-						elif (c.score < config.thresholds.lower and s.link_flair_text != "Small Boots"):
+						elif (c.score < config.thresholds.lower and s.link_flair_text == None):
 
 							#flair the post "Small Boot" and report the post
-
-							s = r.submission(post['id'])
-
 							s.mod.flair(text = "Small Boots", css_class = None)
-
-							if (post["reported"] == 0):
-
-								s.report(formats.report.smallboot)
-								post["reported"] = 1
-
+							s.report(formats.report.smallboot)
 							logging.log('[VOTE]Submission flaired as "Small Boot", id=' + s.id)
+
+							#change the value in database
+							with db.conn:
+								db.c.execute("UPDATE posts SET reported = 1 WHERE id = ?", (s.id,))
 							
 							myLog.watch += 1
 							time.sleep(3)
 
 				else:
 
-					post['watchlist_comment'] = 0
+					db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (s.id,))
 
 				#clear the post value
 				post = None
@@ -520,31 +549,33 @@ class vote:
 	#checking the posts' score to decide the "True BTB"user flair
 	def check_score_submission():
 
-		global db
+		#gather the id into a list
+		list_post = []
+		list0 = db.get_posts('id', 'watchlist_submission', 1)
 
-		#gather the posts' id into a list
-		list0 = []
-		
-		for post in db["posts"]:
+		for post in list0:
 
-			if (post["watchlist_submission"] == 1):
+			if (time.time() - post['created']) < 172800:
 
-				if (time.time() - post['created']) < 172800:
-
-					list0.append("t3_" + str(post['id']))
-
-		#retrive the posts' info from reddit.com, 100 posts at a time
-		while (len(list0) > 0):
-
-			if (len(list0) > 100):
-
-				list1 = list0[:100]
-				list0 = list0[100:]
+				list_post.append("t3_" + str(post[0]))
 
 			else:
 
-				list1 = list0
-				list0 = []
+				with db.conn:
+					db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (post[0],))
+
+		#retrive the posts' info from reddit.com, 100 posts at a time
+		while (len(list_post) > 0):
+
+			if (len(list_post) > 100):
+
+				list1 = list_post[:100]
+				list_post = list_post[100:]
+
+			else:
+
+				list1 = list_post
+				list_post = []
 
 			submissions = r.info(list1)
 			logging.log("[VOTE]" + str(len(list1)) + " Posts load for link flair")
@@ -583,10 +614,11 @@ class vote:
 						css_class = "botm"
 
 					sub.flair.set(s.author, flair_text, css_class)
+					logging.log('[VOTE]User flair changed, op = ' + str(s.author))
 
-					post['watchlist_submission'] = 0
-
-					logging.log('[VOTE]Flair changed, op = ' + str(s.author))
+					#change the value in database
+					with db.conn:
+						db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (post[0],))
 
 					myLog.watch += 1
 					time.sleep(3)
@@ -594,8 +626,12 @@ class vote:
 				elif (not "True BootTooBig" in s.link_flair_text):
 
 					logging.log('[VOTE]Submission remvoed from watchlist submission, id = ' + s.id)
+					
+					#change the value in database
+					with db.conn:
+						db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (post[0],))
+
 					myLog.watch += 1
-					post['watchlist_submission'] = 0
 
 			time.sleep(1)
 
@@ -615,15 +651,16 @@ class botm:
 
 			#generating contest title
 			month = int(time.strftime('%m')) - 2
+			year = int(time.strftime('%G'))
 			m = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 			if (month == -1):
 				month = m[11]
+				year -= 1
 
 			else:
 
 				month = m[month]
 
-			year = time.strftime('%G')
 			title = formats.botm.title.format(month = month, year = year)
 
 			body = formats.botm.body
@@ -632,12 +669,7 @@ class botm:
 
 			contest = r.subreddit(config.subreddit).submit(title = title, selftext = body)
 			contest.mod.flair(text = "BotM Contest", css_class = None)
-			logging.log("[BOTM]Contest Thread Posted")
-
-			db["botm"] = {"id": contest.id, 
-						  "date": month + year,
-						  "comments":[]}
-			logging.log("[VOTE]Contest id added to database, id=" + contest.id)
+			logging.log_force("[BOTM]Contest Thread Posted")
 
 			time.sleep(3)
 
@@ -657,8 +689,8 @@ class botm:
 
 					i += 1
 
-					db["botm"]["comments"].append({"id": c.id, 
-												   "post_id": s.id})
+					db.insert_botm(month, year, s.id, c.id)
+					logging.log_force("Comment added to the contest thread, id = ?, comment_id = ?", (s.id, c.id,))
 
 					time.sleep(3)
 
@@ -672,12 +704,9 @@ class botm:
 			#sticky the contest thread
 			contest.mod.sticky()
 			contest.mod.contest_mode(state=True)
-			logging.log("[BOTM]Contest Thread stickied, and contest mode enabled")
+			logging.log_force("[BOTM]Contest Thread stickied, and contest mode enabled")
 
 			time.sleep(1)
-
-			with open('database.json', 'w') as outfile:
-				json.dump(db, outfile)
 
 # +------------------------------------------------+
 # |                                                |
@@ -688,26 +717,10 @@ class botm:
 #start timer
 start_time = time.time()
 
-#initiate sunday and myLog
+#initiate myLog, myDB, and sunday
 logging = myLog()
+db = myDB()
 sunday = sbs()
-
-#load database from database.json
-db = {}
-if (os.stat("database.json").st_size == 0):
-
-	db = {"posts":[],
-		"botm":[],
-		"archive":[],
-		"top100":[]}
-
-	logging.log_force("[MAIN]Database Created")
-
-else:
-
-	db = json.load(open('database.json'))
-
-	logging.log_force("[MAIN]Database Loaded")
 
 #log into reddit
 r = praw.Reddit(username = config.credentials.username, 
@@ -734,26 +747,26 @@ while True:
 	
 	logging.log("[MAIN]Obtaining 10 posts")
 	for s in r.subreddit(config.subreddit).new(limit=10):
+		
+		#check if the id already exist in the database
+		db.c.execute("select id from POSTS where id=?", (s.id,))
+		data = db.c.fetchall()
+		new = not data
 
-		if not search_id(s.id) and s.link_flair_text not in config.ignored_link_flair:
+		if new and s.link_flair_text not in config.ignored_link_flair:
 
 			if (not s.is_self):
 
 				vote.reply_comment(s)
 
 			elif (s.author not in config.modlist):
-
+            
 				#remove self post that is not a mod post
 				text = formats.remove_message.self_post.format(op = 'u/' + str(s.author))
 				rm = s.reply(text)
 				rm.mod.distinguish(how='yes', sticky = True)
 				s.mod.remove(spam = False)
 				logging.log('[REMO]Submission removed, id={}, reason={}'.format(s.id, 'self post'))
-
-	#write to database
-	with open('database.json', 'w') as outfile:
-
-		json.dump(db, outfile)
 
 	logging.log('[MAIN]Sleeping')
 	logging.printlog()
@@ -766,3 +779,4 @@ while True:
 		break
 
 logging.log_force("[MAIN]Program terminated\n")
+db.conn.close()
