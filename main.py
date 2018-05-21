@@ -402,10 +402,6 @@ class vote:
 		#adding new post info into the database	
 		db.insert_post(s, c)
 
-		logging.log("[VOTE]New post added to database, id=" + s.id)
-		myLog.new += 1
-		print ("1")
-
 	#checking the comments' score to decide the link flair and remove
 	def check_score_comment():
 
