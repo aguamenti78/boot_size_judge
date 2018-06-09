@@ -228,15 +228,10 @@ class myLog:
 def modlog():
 	for s in r.subreddit(config.subreddit).mod.log(action = "removelink", limit=25):
 		id = (s.target_fullname)[3:]
-		db.c.execute("SELECT removed FROM posts where id = ?", (id,))
-		if(db.c.fetchone()[0] == 0):
-			with db.conn:
-				db.c.execute("UPDATE posts SET removed = 1 WHERE id = ?", (id,))
-				db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (id,))
-				db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (id,))
-
-			logging.log("[REMO]Post removed based on mod log, id={}, mod={}".format(s.target_fullname[3:], s.mod))
-			myLog.remove += 1
+		with db.conn:
+			db.c.execute("UPDATE posts SET removed = 1 WHERE id = ?", (id,))
+			db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (id,))
+			db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (id,))
 
 # +------------------------------------------------+
 # |                                                |
@@ -313,12 +308,12 @@ class myDB:
 	def insert_top100(self, id, hash):
 
 		with self.conn:
-			self.c.execute("INSERT INTO posts VALUES (:id, :hash)", {'id': id, "hash": hash})
+			self.c.execute("INSERT INTO top100 VALUES (:id, :hash)", {'id': id, "hash": hash})
 			
 	def insert_botm(self, month, year, post_id, comment_id):
 
 		with self.conn:
-			self.c.execute("INSERT INTO posts VALUES (:month, :year, :post_id, :comment_id)", {'month': month, 'year': year, 'post_id': post_id, ':comment_id': comment_id})
+			self.c.execute("INSERT INTO botm VALUES (:month, :year, :post_id, :comment_id)", {'month': month, 'year': year, 'post_id': post_id, 'comment_id': comment_id})
 
 # +------------------------------------------------+
 # |                                                |
@@ -418,16 +413,22 @@ class vote:
 
 		for post in list0:
 
+			if (post[3] is 1):
 
-			if (time.time() - post[5]) < 86400:
+				if (time.time() - post[5]) < 86400:
 
-				list_comment.append("t1_" + str(post[4]))
-				list_post.append("t3_" + str(post[0]))
+					list_comment.append("t1_" + str(post[4]))
+					list_post.append("t3_" + str(post[0]))
 
-			else:
+				else:
 
-				with db.conn:
-					db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (post[0],))
+					with db.conn:
+						db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (post[0],))
+
+					logging.log("[VOTE]Comment removed from watchlist for being more than one day old, id={}, comment_id={}".format(post[0], post[4]))
+					myLog.watch += 1
+
+		logging.log("[VOTE]" + str(len(list_comment)) + " Comments load for link flair")
 
 		#retrive the comments' info from reddit.com, 100 comments at a time
 		while (len(list_post) > 0):
@@ -453,8 +454,6 @@ class vote:
 
 			c_list = list(r.info(comments))
 			s_list = list(r.info(posts))
-			
-			logging.log("[VOTE]" + str(len(c_list)) + " Comments load for link flair")
 
 			for i in range(len(s_list)):
 
@@ -471,9 +470,9 @@ class vote:
 						if (c.score > config.thresholds.upper and s.link_flair_text == None):
 
 							#flair the post "True BootTooBig"
-							s.mod.flair(text = "True BootTooBig", css_class = None)
-							logging.log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
-
+							#s.mod.flair(text = "True BootTooBig", css_class = None)
+							logging.log('[VOTE]Submission reported as "True BootTooBig", id=' + s.id)
+							s.report('bot comment score higher than 50')
 							#change the value in database
 							with db.conn:
 								db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (s.id,))
@@ -500,13 +499,14 @@ class vote:
 						if (c.score > config.thresholds.upper):
 
 							#flair the post "True BootTooBig"
-							s.mod.flair(text = "True BootTooBig", css_class = None)
-							logging.log('[VOTE]Submission flaired as "True BootTooBig", id=' + s.id)
-
+							#s.mod.flair(text = "True BootTooBig", css_class = None)
+							logging.log('[VOTE]Submission reported as "True BootTooBig", id=' + s.id)
+							s.report('bot comment score higher than 50')
 							#change the value in database
 							with db.conn:
 								db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (s.id,))
 								db.c.execute("UPDATE posts SET watchlist_submission = 1 WHERE id = ?", (s.id,))
+								db.c.execute("UPDATE posts SET reported = 1 WHERE id = ?", (s.id,))
 
 							myLog.watch += 1
 							time.sleep(2)
@@ -515,7 +515,7 @@ class vote:
 
 							#remove the post
 							text = formats.remove_message.smallboot
-							text = text.format(op = post['op'], url = post['comment_perma'])
+							text = text.format(op = ('u/'+str(s.author)), url = c.permalink)
 							rm = s.reply(text)
 							rm.mod.distinguish(how='yes', sticky = True)
 							s.mod.remove(spam = False)
@@ -594,7 +594,7 @@ class vote:
 
 			for s in submissions:
 
-				if ("True BootTooBig" in s.link_flair_text and s.score > 5000):
+				if (s.link_flair_text != None and "True BootTooBig" in s.link_flair_text and s.score > 5000):
 
 					#give the user a "True BTB" flair
 					logging.log("[VOTE]Post loaded for user flair, id = " + s.id)
@@ -633,7 +633,7 @@ class vote:
 					myLog.watch += 1
 					time.sleep(3)
 
-				elif (not "True BootTooBig" in s.link_flair_text):
+				elif (s.link_flair_text != None and "True BootTooBig" not in s.link_flair_text):
 
 					logging.log('[VOTE]Submission remvoed from watchlist submission, id = ' + s.id)
 					
@@ -699,8 +699,8 @@ class botm:
 
 					i += 1
 
-					db.insert_botm(month, year, s.id, c.id)
-					logging.log_force("Comment added to the contest thread, id = ?, comment_id = ?", (s.id, c.id,))
+					db.insert_botm(month, year, str(s.id), str(c.id))
+					logging.log_force("Comment added to the contest thread, id = {}, comment_id = {}".format(s.id, c.id))
 
 					time.sleep(3)
 
@@ -745,7 +745,7 @@ logging.log_force("[MAIN]Logged in!")
 schedule.every().saturday.at("18:00").do(sunday.setTrue)
 schedule.every().monday.at("6:00").do(sunday.setFalse)
 schedule.every().day.at("0:01").do(botm.contest)
-
+botm.contest()
 #main loop
 while True:
 
@@ -788,5 +788,6 @@ while True:
 
 		break
 
-logging.log_force("[MAIN]Program terminated\n")
+total_uptime = time.time() - start_time
+logging.log_force("[MAIN]Program terminated, total uptime:{}\n\n".format(total_uptime))
 db.conn.close()
