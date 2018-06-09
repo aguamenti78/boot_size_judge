@@ -228,10 +228,15 @@ class myLog:
 def modlog():
 	for s in r.subreddit(config.subreddit).mod.log(action = "removelink", limit=25):
 		id = (s.target_fullname)[3:]
-		with db.conn:
-			db.c.execute("UPDATE posts SET removed = 1 WHERE id = ?", (id,))
-			db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (id,))
-			db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (id,))
+		db.c.execute("SELECT removed FROM posts where id = ?", (id,))
+		if(db.c.fetchone()[0] == 0):
+			with db.conn:
+				db.c.execute("UPDATE posts SET removed = 1 WHERE id = ?", (id,))
+				db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (id,))
+				db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (id,))
+
+			logging.log("[REMO]Post removed based on mod log, id={}, mod={}".format(s.target_fullname[3:], s.mod))
+			myLog.remove += 1
 
 # +------------------------------------------------+
 # |                                                |
