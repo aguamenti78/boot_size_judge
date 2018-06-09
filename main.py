@@ -307,7 +307,7 @@ class myDB:
 
 	def get_posts(self, return_type, where_type, where):
 
-		self.c.execute("SELECT {} FROM posts WHERE '{}' = '{}'".format(return_type, where_type, where))
+		self.c.execute("SELECT '{}' FROM posts WHERE '{}' = '{}'".format(return_type, where_type, where))
 		return self.c.fetchall()
 
 	def insert_top100(self, id, hash):
@@ -413,12 +413,13 @@ class vote:
 		#gather the comments' id into a list
 		list_comment = []
 		list_post = []
-		list0 = db.get_posts('*', 'watchlist_comment', 1)
+		db.c.execute("SELECT * FROM posts WHERE watchlist_comment = 1")
+		list0 = db.c.fetchall()
 
 		for post in list0:
 
 
-			if (time.time() - post['created']) < 86400:
+			if (time.time() - post[5]) < 86400:
 
 				list_comment.append("t1_" + str(post[4]))
 				list_post.append("t3_" + str(post[0]))
@@ -431,6 +432,8 @@ class vote:
 		#retrive the comments' info from reddit.com, 100 comments at a time
 		while (len(list_post) > 0):
 
+			comments = []
+			posts = []
 			if (len(list_post) > 100):
 
 				comments = list_comment[:100]
@@ -441,8 +444,12 @@ class vote:
 
 			else:
 
-				comments = list_comment[:100]
+				comments = list_comment
 				list_comment = []
+
+				posts = list_post
+				list_post = []
+
 
 			c_list = list(r.info(comments))
 			s_list = list(r.info(posts))
@@ -458,7 +465,7 @@ class vote:
 				if (s.link_flair_text == None or s.link_flair_text == "Small Boots"):
 
 					#check if the post is posted on small boot sunday
-					isSunday = db.get_posts('isSunday', 'id', "'8kl31d'")[0][0]
+					isSunday = db.c.execute("SELECT isSunday FROM posts WHERE id = ?", (s.id,))
 					if (isSunday == 1):
 
 						if (c.score > config.thresholds.upper and s.link_flair_text == None):
@@ -552,11 +559,13 @@ class vote:
 
 		#gather the id into a list
 		list_post = []
-		list0 = db.get_posts('id', 'watchlist_submission', 1)
+		db.c.execute("SELECT * FROM posts WHERE watchlist_submission = 1")
+		list0 = db.c.fetchall()
+
 
 		for post in list0:
 
-			if (time.time() - post['created']) < 172800:
+			if (time.time() - post[5]) < 172800:
 
 				list_post.append("t3_" + str(post[0]))
 
@@ -567,6 +576,8 @@ class vote:
 
 		#retrive the posts' info from reddit.com, 100 posts at a time
 		while (len(list_post) > 0):
+
+			list1 = []
 
 			if (len(list_post) > 100):
 
@@ -582,8 +593,6 @@ class vote:
 			logging.log("[VOTE]" + str(len(list1)) + " Posts load for link flair")
 
 			for s in submissions:
-
-				post = get_post(s.id, "id")
 
 				if ("True BootTooBig" in s.link_flair_text and s.score > 5000):
 
