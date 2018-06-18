@@ -57,18 +57,26 @@ class myLog:
 
 	def log(self, entry):
 
+		if ("Sleeping") not in entry:
+
+			myLog.currentTask = entry
+			text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + entry
+			if ("[REMO]" in entry):
+	
+				myLog.remove += 1
+	
+			myLog.qLog.append(text)
+			myLog.refresh_statusline(self)
+
+
+	def log_error(self, entry, error):
+
+		myLog.error_new += 1
+		myLog.error_total += 1
+
+		text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + entry + "\n" + "ERROR: " + str(error)
+
 		myLog.currentTask = entry
-		text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + entry
-		if ("[ERROR]" in entry):
-
-			myLog.error_new += 1
-			myLog.error_total += 1
-
-		if ("[REMO]" in entry):
-
-			myLog.remove += 1
-
-		myLog.qLog.append(text)
 		myLog.refresh_statusline(self)
 
 	def log_force(self, entry):
@@ -189,13 +197,26 @@ class myLog:
 			hour = int(min / 60)
 			min = int(min - hour * 60)
 
-			if (hour == 1):
+			if (hour > 23):
 
-				duration = "{} hr {} mins".format(hour, min)
+				day = int(hour / 24)
+				hour = int(hour - day * 24)
+				
+				if (day == 1):
 
+					duration = "{} day ".format(day)
+
+				else:
+
+					duration = "{} days ".format(day)
+
+			if (hour <= 1):
+	
+				duration += "{} hr {} mins".format(hour, min)
+	
 			else:
-
-				duration = "{} hrs {} mins".format(hour, min)
+	
+				duration += "{} hrs {} mins".format(hour, min)
 
 		#store and print the new status line
 		line0 = formats.statusline.format(time.strftime("%Y/%m/%d %H:%M:%S %Z"), myLog.error_total, duration, myLog.currentTask)
@@ -213,6 +234,7 @@ class myLog:
 		myLog.length = len(line0)
 		print (line1, end="", flush = True)
 
+		return duration
 
 	#clear all value except statusline and error_total
 	def clear(self):
@@ -574,6 +596,9 @@ class vote:
 				with db.conn:
 					db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (post[0],))
 
+				logging.log("[VOTE]Submission removed from watchlist for being more than two day old, id={}".format(post[0]))
+				myLog.watch += 1
+
 		#retrive the posts' info from reddit.com, 100 posts at a time
 		while (len(list_post) > 0):
 
@@ -751,32 +776,48 @@ while True:
 
 	schedule.run_pending()
 
-	vote.check_score_comment()
-	vote.check_score_submission()
-	modlog()
+	try:
+		vote.check_score_comment()
+	except Exception as error:
+		logging.log_error("[VOTE]error retriving score comment", error)
+
+	try:
+		vote.check_score_submission()
+	except Exception as error:
+		logging.log_error("[VOTE]error retriving submission comment", error)
+
+	try:
+		modlog()
+	except Exception as error:
+		logging.log_error("error retriving moderation log", error)
+
+	try:
+
+		logging.log("[MAIN]Obtaining 10 posts")
+		for s in r.subreddit(config.subreddit).new(limit=10):
+			
+			#check if the id already exist in the database
+			db.c.execute("select id from POSTS where id=?", (s.id,))
+			data = db.c.fetchall()
+			new = not data
 	
-	logging.log("[MAIN]Obtaining 10 posts")
-	for s in r.subreddit(config.subreddit).new(limit=10):
-		
-		#check if the id already exist in the database
-		db.c.execute("select id from POSTS where id=?", (s.id,))
-		data = db.c.fetchall()
-		new = not data
+			if new and s.link_flair_text not in config.ignored_link_flair:
+	
+				if (not s.is_self):
+	
+					vote.reply_comment(s)
+	
+				elif (s.author not in config.modlist):
+				
+					#remove self post that is not a mod post
+					text = formats.remove_message.self_post.format(op = 'u/' + str(s.author))
+					rm = s.reply(text)
+					rm.mod.distinguish(how='yes', sticky = True)
+					s.mod.remove(spam = False)
+					logging.log('[REMO]Submission removed, id={}, reason={}'.format(s.id, 'self post'))
 
-		if new and s.link_flair_text not in config.ignored_link_flair:
-
-			if (not s.is_self):
-
-				vote.reply_comment(s)
-
-			elif (s.author not in config.modlist):
-            
-				#remove self post that is not a mod post
-				text = formats.remove_message.self_post.format(op = 'u/' + str(s.author))
-				rm = s.reply(text)
-				rm.mod.distinguish(how='yes', sticky = True)
-				s.mod.remove(spam = False)
-				logging.log('[REMO]Submission removed, id={}, reason={}'.format(s.id, 'self post'))
+	except Exception as error:
+		logging.log_error("error retriving 10 new posts", error)
 
 	logging.log('[MAIN]Sleeping')
 	logging.printlog()
@@ -788,6 +829,6 @@ while True:
 
 		break
 
-total_uptime = time.time() - start_time
-logging.log_force("[MAIN]Program terminated, total uptime:{}\n\n".format(total_uptime))
+duration = logging.refresh_statusline()
+logging.log_force("[MAIN]Program terminated, total uptime:{}\n\n".format(duration))
 db.conn.close()
