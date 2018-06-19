@@ -21,8 +21,8 @@ class myLog:
 
 	new = 0
 	watch = 0
-	error_total = 0
 	error_new = 0
+	error_total = 0
 	statusline = ""
 	currentTask = ""
 	remove = 0
@@ -57,9 +57,10 @@ class myLog:
 
 	def log(self, entry):
 
+		myLog.currentTask = entry
+
 		if ("Sleeping") not in entry:
 
-			myLog.currentTask = entry
 			text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + entry
 			if ("[REMO]" in entry):
 	
@@ -75,6 +76,7 @@ class myLog:
 		myLog.error_total += 1
 
 		text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + entry + "\n" + "ERROR: " + str(error)
+		myLog.qLog.append(text)
 
 		myLog.currentTask = entry
 		myLog.refresh_statusline(self)
@@ -83,11 +85,6 @@ class myLog:
 
 		myLog.currentTask = entry
 		text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + entry
-
-		if ("[ERROR]" in entry):
-
-			myLog.error_new += 1
-			myLog.error_total += 1
 
 		#open the log.txt in append mode and write in the new log
 		f = open('log.txt','a') 
@@ -123,7 +120,7 @@ class myLog:
 
 	def printlog(self):
 
-		if (myLog.new > 0 or myLog.watch > 0 or myLog.error_new > 0 or myLog.remove > 0):
+		if (myLog.new > 0 or myLog.watch > 0 or myLog.remove > 0):
 
 			#format the summary line
 			#text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + formats.summaryline.format(myLog.new, myLog.watch, myLog.remove, myLog.error_new, myLog.error_total)
@@ -248,12 +245,28 @@ class myLog:
 
 #monitor mod log from human removing post
 def modlog():
+
 	for s in r.subreddit(config.subreddit).mod.log(action = "removelink", limit=25):
 		id = (s.target_fullname)[3:]
-		with db.conn:
-			db.c.execute("UPDATE posts SET removed = 1 WHERE id = ?", (id,))
-			db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (id,))
-			db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (id,))
+		
+		#retrive data from database
+		db.c.execute("SELECT * FROM posts WHERE id = ?", (id,))
+		match = db.c.fetchone()
+
+		#check if there is a match in the database
+		if (match is not None):
+
+			#check if the post is removed before
+			if (match[6] == 0):
+
+				#remvoe the post from the database
+				with db.conn:
+					db.c.execute("UPDATE posts SET removed = 1 WHERE id = ?", (id,))
+					db.c.execute("UPDATE posts SET watchlist_submission = 0 WHERE id = ?", (id,))
+					db.c.execute("UPDATE posts SET watchlist_comment = 0 WHERE id = ?", (id,))
+					
+				logging.log("[VOTE]Submission removed based on modlog, id={}".format(match[0]))
+				myLog.watch += 1
 
 # +------------------------------------------------+
 # |                                                |
