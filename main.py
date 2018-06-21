@@ -120,7 +120,7 @@ class myLog:
 
 	def printlog(self):
 
-		if (myLog.new > 0 or myLog.watch > 0 or myLog.remove > 0):
+		if (myLog.new > 0 or myLog.watch > 0 or myLog.error_new > 0 or myLog.remove > 0):
 
 			#format the summary line
 			#text = time.strftime("%Y/%m/%d %H:%M:%S %Z") + "    " + formats.summaryline.format(myLog.new, myLog.watch, myLog.remove, myLog.error_new, myLog.error_total)
